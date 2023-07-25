@@ -1,0 +1,6 @@
+{
+    "_class": ["Page", "Opts"],
+    "layout": {
+        "_class": ["Layout", "Opts"]
+    }
+}

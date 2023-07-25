@@ -1,0 +1,7 @@
+{
+    "_class": ["Column", "Layout", "Opts"],
+    "weights": [1, 1, 1],
+    "elements": {
+        "_class": ["Layout", "List", "Opts"]
+    }
+}

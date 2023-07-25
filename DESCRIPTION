@@ -1,0 +1,16 @@
+Package: ComicPanelR
+Title: Create Comic Page Layouts with Panels
+Version: 0.0.0.9001
+Authors@R: 
+    person("Christof", "Schötz", , "math@christof-schoetz.de", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0003-3528-4544"))
+Description: The packacge allows to specify the layout of comic pages with panels. It converts layout definitions to image files. In particular, stencils for individual panels can be created.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+Imports: 
+    ConfigOpts,
+    graphics,
+    grDevices,
+    magick
