@@ -1,14 +1,8 @@
 {
     "_class": ["Comic", "Opts"],
-    "__size": "end format width and height in cm",
-    "size": {
-        "w": 16.8,
-        "h": 26.0
+    "geometry": {
+        "_class": ["Geometry", "Opts"]
     },
-    "__bleed": "space added to size (on each of the four sides) in cm for cutting off after print",
-    "bleed": 0.3,
-    "sideMargin": 1,
-    "panelSpacing": 0.5,
     "pages": {
         "_class": ["Page", "List", "Opts"]
     }

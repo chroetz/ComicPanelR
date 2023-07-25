@@ -7,19 +7,43 @@ layout2coor <- function(fileName) {
 
   fileBaseName <- sub("\\.layout\\.json$", "", fileName, ignore.case=TRUE)
   fileIn <- paste0(fileBaseName, ".layout.json")
-  fileOut <- paste0(fileBaseName, ".coor.json")
 
   comic <- ConfigOpts::readOpts(fileIn, optsClass="Comic")
-  page <- comic$pages$list[[1]]
+
+  polygonLists <- lapply(comic$pages$list, page2coor, geometry = comic$geometry)
+
+  lapply(
+    seq_along(polygonLists),
+    \(i) ConfigOpts::writeOpts(polygonLists[[i]], sprintf("%s_page%02d.coor.json", fileBaseName, i)))
+
+  return(invisible())
+}
+
+
+rect <- function(x,y,w,h) {
+    coor <- matrix(
+      c(
+        c(x, y),
+        c(x, y+h),
+        c(x+w, y+h),
+        c(x+w, y)),
+      ncol = 2,
+      byrow = TRUE)
+    return(coor)
+  }
+
+
+page2coor <- function(page, geometry) {
+
   rows <- page$layout$elements$list
   firstPanel <- rows[[1]]
   lastPanel <- rows[[length(rows)]]
 
   polygonList <- list()
 
-  topSpacer <- if (firstPanel$sideMargin) comic$sideMargin else 0
-  bottomSpacer <- if (lastPanel$sideMargin) comic$sideMargin else 0
-  panelAreaH <- comic$size$h - topSpacer - bottomSpacer - (length(rows)-1)*comic$panelSpacing
+  topSpacer <- if (firstPanel$sideMargin) geometry$sideMargin else 0
+  bottomSpacer <- if (lastPanel$sideMargin) geometry$sideMargin else 0
+  panelAreaH <- geometry$size$h - topSpacer - bottomSpacer - (length(rows)-1)*geometry$panelSpacing
 
   x <- 0
   y <- topSpacer
@@ -28,21 +52,21 @@ layout2coor <- function(fileName) {
     r <- rows[[rowIdx]]
     polygonRow <- list()
     if (r$sideMargin) {
-      leftSpacer <- comic$sideMargin
-      rightSpacer <- comic$sideMargin
+      leftSpacer <- geometry$sideMargin
+      rightSpacer <- geometry$sideMargin
     } else {
       leftSpacer <- 0
       rightSpacer <- 0
     }
     h <- panelAreaH * page$layout$weights[rowIdx] / sum(page$layout$weights)
-    panelAreaW <- comic$size$w - leftSpacer - rightSpacer - (length(r$weights)-1)*comic$panelSpacing
+    panelAreaW <- geometry$size$w - leftSpacer - rightSpacer - (length(r$weights)-1)*geometry$panelSpacing
     x <- leftSpacer
 
     for (i in seq_along(r$weights)) {
       w <- panelAreaW * r$weights[i] / sum(r$weights)
       polygon <- rect(x, y, w, h)
       polygonRow <- c(polygonRow, list(polygon))
-      x <- x + w + comic$panelSpacing
+      x <- x + w + geometry$panelSpacing
     }
 
     r$tilt <- r$tilt[seq_len(length(r$weights)-1)]
@@ -63,13 +87,13 @@ layout2coor <- function(fileName) {
 
     polygonList <- c(polygonList, polygonRow)
 
-    y <- y + h + comic$panelSpacing
+    y <- y + h + geometry$panelSpacing
   }
 
   results <-  ConfigOpts::makeOpts(
     c("Polygon", "List"),
-    size = comic$size,
-    bleed = comic$bleed,
+    size = geometry$size,
+    bleed = geometry$bleed,
     list = lapply(
       polygonList,
       \(p)  ConfigOpts::makeOpts(
@@ -77,18 +101,12 @@ layout2coor <- function(fileName) {
         points = p)
     )
   )
-  ConfigOpts::writeOpts(results, fileOut)
+
+  return(results)
 }
 
-rect <- function(x,y,w,h) {
-    coor <- matrix(
-      c(
-        c(x, y),
-        c(x, y+h),
-        c(x+w, y+h),
-        c(x+w, y)),
-      ncol = 2,
-      byrow = TRUE)
-    return(coor)
-  }
+
+writeCoorPages <- function(polygonList) {
+
+}
 
