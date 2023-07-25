@@ -85,7 +85,15 @@ page2coor <- function(page, geometry) {
       polygonRow[[j+1]][2,1] <- polygonRow[[j+1]][2,1] - tilt * len
     }
 
-    polygonList <- c(polygonList, polygonRow)
+    polygonList <- c(
+      polygonList,
+      lapply(
+        seq_along(polygonRow),
+        \(k)  ConfigOpts::makeOpts(
+          "Polygon",
+          points = polygonRow[[k]],
+          frame = r$frame)
+      ))
 
     y <- y + h + geometry$panelSpacing
   }
@@ -94,12 +102,7 @@ page2coor <- function(page, geometry) {
     c("Polygon", "List"),
     size = geometry$size,
     bleed = geometry$bleed,
-    list = lapply(
-      polygonList,
-      \(p)  ConfigOpts::makeOpts(
-        "Polygon",
-        points = p)
-    )
+    list = polygonList
   )
 
   return(results)
