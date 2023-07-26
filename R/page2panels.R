@@ -83,13 +83,13 @@ coorPanels2Id <- function(panels) {
 
 drawIdPanelsRects <- function(pan, box) {
 
-  colors <- sample(rainbow(nrow(pan$panels), alpha=0.3))
+  colors <- sample(grDevices::rainbow(nrow(pan$panels), alpha=0.3))
   for (i in seq_len(nrow(pan$panels))) {
     coors <- pan$coors[pan$panels[i, ], ]
     # TODO: if any side of the quadrilateral has a deco, apply it
-    polygon(coors[,1], coors[,2], border="#000000", lwd=2, col=colors[i])
+    graphics::polygon(coors[,1], coors[,2], border="#000000", lwd=2, col=colors[i])
     center <- colMeans(coors)
-    text(center[1], center[2], paste0("P", i), adj = c(0.5, 0.5))
+    graphics::text(center[1], center[2], paste0("P", i), adj = c(0.5, 0.5))
   }
 
   for (i in seq_len(nrow(pan$coors))) {
@@ -99,15 +99,15 @@ drawIdPanelsRects <- function(pan, box) {
 
 drawNode <- function(pos, txt, r = 0.5, fill="#EEEEEE", draw="#000000", textColor = "#000000") {
   theta <- seq(0, 2*pi, length.out = 100)
-  polygon(pos[1]+r*cos(theta), pos[2]+r*sin(theta), border=draw, lwd=2, col=fill)
-  text(pos[1], pos[2], txt, adj = c(0.5, 0.5), col = textColor)
+  graphics::polygon(pos[1]+r*cos(theta), pos[2]+r*sin(theta), border=draw, lwd=2, col=fill)
+  graphics::text(pos[1], pos[2], txt, adj = c(0.5, 0.5), col = textColor)
 }
 
 pan2image <- function(pan, box, geometry, fileOut) {
   cmPerInch <- 2.54
   pxPerInch <- 300 # dpi
   pxPerCm <- pxPerInch/cmPerInch
-  png(
+  grDevices::png(
     filename = fileOut,
     width = round(geometry$size$w * pxPerCm),
     height = round(geometry$size$h * pxPerCm),
@@ -122,19 +122,3 @@ pan2image <- function(pan, box, geometry, fileOut) {
   drawIdPanelsRects(pan)
   dev.off()
 }
-
-# ConfigOpts::addPackageToPathDefaults("inst/defaultOpts/")
-
-fileOutJson <- "_pan.json"
-fileOutPng <- "_pan.png"
-fileIn <- "_page.json"
-
-page <- ConfigOpts::readOpts(fileIn, "Page")
-box <- makeBox(0, 0, page$geometry$size$w, page$geometry$size$h)
-layout <- page$panelArea
-coorPanels <- getLayoutPanels(layout, box)
-pan <- coorPanels2Id(coorPanels)
-pan2image(pan, box, page$geometry, fileOutPng)
-
-jsonlite::write_json(pan, fileOutJson, auto_unbox = FALSE, digits = NA, pretty = TRUE)
-

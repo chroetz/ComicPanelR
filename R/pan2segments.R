@@ -23,7 +23,7 @@ overlapSegments <- function(s1, s2, pan) {
     rel <- rel[!is.na(rel)]
     if (length(rel) >= 2) {
       if (any(!is.finite(rel))) return(NULL)
-      if (var(rel) > eps) return(NULL)
+      if (stats::var(rel) > eps) return(NULL)
     }
   }
   t11 <- 0
@@ -107,8 +107,8 @@ getTiling <- function(pan) {
     vertices = lapply(seq_len(nrow(pan$panels)), \(i) pan$panels[i,]),
   ) |>
     dplyr::rowwise() |>
-    mutate(sides = list(.env$sides |> dplyr::filter(panel == panelId) |> dplyr::pull(sideId))) |>
-    mutate(segments = list(unlist(.env$sides |> dplyr::filter(panel == panelId) |> dplyr::pull(segments)))) |>
+    dplyr::mutate(sides = list(.env$sides |> dplyr::filter(.data$panel == panelId) |> dplyr::pull(sideId))) |>
+    dplyr::mutate(segments = list(unlist(.env$sides |> dplyr::filter(.data$panel == panelId) |> dplyr::pull(segments)))) |>
     dplyr::ungroup()
 
   return(list(
@@ -137,7 +137,7 @@ segmentContainsOne <- function(s1, s2, pan) {
     rel <- rel[!is.na(rel)]
     if (length(rel) >= 2) {
       if (any(!is.finite(rel))) return(FALSE)
-      if (var(rel) > eps) return(FALSE)
+      if (stats::var(rel) > eps) return(FALSE)
     }
   }
   t11 <- 0
@@ -147,6 +147,3 @@ segmentContainsOne <- function(s1, s2, pan) {
   if (max(c(t21, t22))-eps < t11 || min(c(t21, t22))+eps > t12) return(FALSE)
   return(TRUE)
 }
-
-tiling <- getTiling(pan)
-

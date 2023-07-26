@@ -2,7 +2,7 @@ makeStraightPath <- function(seg, vertices) {
   A <- vertices$coordinates[seg[1],]
   B <- vertices$coordinates[seg[2],]
   v <- B - A
-  n <- 1e3
+  n <- 1e2 # TODO: 1e3 in production
   x <- seq(0, 1, length.out = n)
   path <- rep(A, each=n) + outer(x, v)
   return(path)
@@ -31,7 +31,7 @@ tiling2image <- function(tiling, box, geometry, fileOut) {
   cmPerInch <- 2.54
   pxPerInch <- 300 # dpi
   pxPerCm <- pxPerInch/cmPerInch
-  png(
+  grDevices::png(
     filename = fileOut,
     width = round(geometry$size$w * pxPerCm),
     height = round(geometry$size$h * pxPerCm),
@@ -65,7 +65,7 @@ getSegmentOrdering <- function(segments) {
 
 drawTiling <- function(tiling) {
 
-  colors <- sample(rainbow(nrow(tiling$panels), alpha=0.3))
+  colors <- sample(grDevices::rainbow(nrow(tiling$panels), alpha=0.3))
   for (i in seq_len(nrow(tiling$panels))) {
     segIds <- tiling$panels$segments[[i]]
     segments <- tiling$segments$segment[segIds,]
@@ -80,31 +80,15 @@ drawTiling <- function(tiling) {
       })
 
     path <- do.call(rbind, paths)
-    polygon(path[,1], path[,2], border="#000000", lwd=2, col=colors[i])
+    graphics::polygon(path[,1], path[,2], border="#000000", lwd=2, col=colors[i])
     center <- colMeans(path)
-    text(center[1], center[2], paste0("P", i), adj = c(0.5, 0.5))
+    graphics::text(center[1], center[2], paste0("P", i), adj = c(0.5, 0.5))
   }
 
-  segNr <- 0
-  for (i in seq_len(nrow(tiling$panels))) {
-    segIds <- tiling$panels$segments[[i]]
-    segments <- tiling$segments$segment[segIds,]
-    paths <- tiling$segments$path[segIds]
-    for (k in seq_along(paths)) {
-      segNr <- segNr + 1
-      center <- colMeans(paths[[k]])
-      drawNode(center, paste0("S", segNr), fill = "#555555", draw = "#FFFFFF", textColor= "#FFFFFF")
-    }
+  for (i in seq_len(nrow(tiling$segments))) {
+    path <- tiling$segments$path[[i]]
+    center <- colMeans(path)
+    drawNode(center, paste0("S", i), fill = "#555555", draw = "#FFFFFF", textColor= "#FFFFFF")
   }
 }
 
-tiling$segments <-
-  tiling$segments |>
-  rowwise() |>
-  mutate(
-    path = list(makeStraightPath(segment, tiling$vertices)))
-tiling$segments$path[[5]] <- sinifyPath(tiling$segments$path[[5]], 10, 1)
-
-tiling2image(tiling, box, page$geometry, "_tiling.png")
-
-saveRDS(tiling, "_tiling.RDS")

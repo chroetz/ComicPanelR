@@ -6,7 +6,7 @@ transformPan <- function(pan, transform) {
     className,
     "Rotate" = rotatePath(pan, transform),
     "Adjust" = adjustCoor(pan, transform),
-    stop(pasteo("Unknown Transform ", className))
+    stop(paste0("Unknown Transform ", className))
   )
   return(pan)
 }
@@ -49,21 +49,8 @@ adjustCoor <- function(pan, transform) {
 }
 
 applyTransforms <- function(pan, transformList) {
-  for (trnsfrm in opts$list) {
+  for (trnsfrm in transformList) {
     pan <- transformPan(pan, trnsfrm)
   }
   return(pan)
 }
-
-# ConfigOpts::addPackageToPathDefaults("inst/defaultOpts/")
-
-fileIdPanels <- "_pan.json"
-fileTransform <- "_transform.json"
-
-pan <- jsonlite::read_json(fileIdPanels, simplifyVector=TRUE)
-opts <- ConfigOpts::readOpts(fileTransform, c("Transform", "List"))
-
-pan <- applyTransforms(pan, opts)
-
-pan2image(pan, box, page$geometry, "_pan_transformed.png")
-
