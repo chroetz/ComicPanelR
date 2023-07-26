@@ -6,5 +6,6 @@
         "h": 26.0
     },
     "__bleed": "space added to size (on each of the four sides) in cm for cutting off after print",
-    "bleed": 0.3
+    "bleed": 0.3,
+    "sideMargin": 1
 }

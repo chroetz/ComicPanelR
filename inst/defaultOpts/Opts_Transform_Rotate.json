@@ -1,0 +1,5 @@
+{
+    "_class": ["Rotate", "Transform", "Opts"],
+    "path": [1,2],
+    "angle": 0
+}

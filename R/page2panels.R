@@ -65,8 +65,8 @@ coorPanels2Id <- function(panels) {
     rowSums(abs(coors[rep(1:n, each=n),] - coors[rep(1:n, times=n),])) < sqrt(.Machine$double.eps),
     nrow = n)
   representativeIdx <- apply(isSame, 1, which.max)
-  newId <- representativeIdx[sel]
   sel <- representativeIdx == 1:n
+  newId <- representativeIdx[sel]
   uniqueCoors <- coors[sel, ]
   ids <- sapply(representativeIdx, \(idx) which(newId == idx))
   panelsCoorIds <- matrix(ids, byrow = TRUE, ncol = 4)
@@ -81,56 +81,60 @@ coorPanels2Id <- function(panels) {
     panels = panelsCoorIds)
 }
 
-drawIdPanelsRects <- function(idPanels, box) {
+drawIdPanelsRects <- function(pan, box) {
 
-  colors <- sample(rainbow(nrow(idPanels$panels), alpha=0.3))
-  for (i in seq_len(nrow(idPanels$panels))) {
-    coors <- idPanels$coors[idPanels$panels[i, ], ]
+  colors <- sample(rainbow(nrow(pan$panels), alpha=0.3))
+  for (i in seq_len(nrow(pan$panels))) {
+    coors <- pan$coors[pan$panels[i, ], ]
+    # TODO: if any side of the quadrilateral has a deco, apply it
     polygon(coors[,1], coors[,2], border="#000000", lwd=2, col=colors[i])
     center <- colMeans(coors)
     text(center[1], center[2], paste0("P", i), adj = c(0.5, 0.5))
   }
 
-  for (i in seq_len(nrow(idPanels$coors))) {
-    drawNode(idPanels$coors[i,], paste0("C", i))
+  for (i in seq_len(nrow(pan$coors))) {
+    drawNode(pan$coors[i,], paste0("C", i))
   }
 }
 
-drawNode <- function(pos, txt, r = 0.5) {
+drawNode <- function(pos, txt, r = 0.5, fill="#EEEEEE", draw="#000000", textColor = "#000000") {
   theta <- seq(0, 2*pi, length.out = 100)
-  polygon(pos[1]+r*cos(theta), pos[2]+r*sin(theta), border="#000000", lwd=2, col="#EEEEEE")
-  text(pos[1], pos[2], txt, adj = c(0.5, 0.5))
+  polygon(pos[1]+r*cos(theta), pos[2]+r*sin(theta), border=draw, lwd=2, col=fill)
+  text(pos[1], pos[2], txt, adj = c(0.5, 0.5), col = textColor)
 }
 
-fileOutJson <- "_idPanels.json"
-fileOutPng <- "_idPanels.png"
+pan2image <- function(pan, box, geometry, fileOut) {
+  cmPerInch <- 2.54
+  pxPerInch <- 300 # dpi
+  pxPerCm <- pxPerInch/cmPerInch
+  png(
+    filename = fileOut,
+    width = round(geometry$size$w * pxPerCm),
+    height = round(geometry$size$h * pxPerCm),
+    res = 300)
+  par(mar = c(0,0,0,0), xaxs = "i", xaxt="n", yaxs = "i", yaxt="n", bg="#FF0000")
+  plot.new()
+  brdr <- geometry$sideMargin + geometry$bleed
+  plot.window(xlim = c(box$x-brdr, box$x+box$w+brdr), ylim = c(box$y+box$h+brdr, box$y-brdr))
+  graphics::rect(
+    box$x-geometry$sideMargin, box$y-geometry$sideMargin, box$x+box$w+geometry$sideMargin, box$y+box$h+geometry$sideMargin,
+    col = "#FFFFFF", border=NA)
+  drawIdPanelsRects(pan)
+  dev.off()
+}
+
+# ConfigOpts::addPackageToPathDefaults("inst/defaultOpts/")
+
+fileOutJson <- "_pan.json"
+fileOutPng <- "_pan.png"
 fileIn <- "_page.json"
 
 page <- ConfigOpts::readOpts(fileIn, "Page")
 box <- makeBox(0, 0, page$geometry$size$w, page$geometry$size$h)
 layout <- page$panelArea
 coorPanels <- getLayoutPanels(layout, box)
-idPanels <- coorPanels2Id(coorPanels)
+pan <- coorPanels2Id(coorPanels)
+pan2image(pan, box, page$geometry, fileOutPng)
 
-sideMargin <- 1
-bleed <- 0.3
-cmPerInch <- 2.54
-pxPerInch <- 300 # dpi
-pxPerCm <- pxPerInch/cmPerInch
+jsonlite::write_json(pan, fileOutJson, auto_unbox = FALSE, digits = NA, pretty = TRUE)
 
-png(
-  filename = fileOutPng,
-  width = round(page$geometry$size$w * pxPerCm),
-  height = round(page$geometry$size$h * pxPerCm),
-  res = 300)
-par(mar = c(0,0,0,0), xaxs = "i", xaxt="n", yaxs = "i", yaxt="n", bg="#FF0000")
-plot.new()
-brdr <- sideMargin + bleed
-plot.window(xlim = c(box$x-brdr, box$x+box$w+brdr), ylim = c(box$y+box$h+brdr, box$y-brdr))
-graphics::rect(
-  box$x-sideMargin, box$y-sideMargin, box$x+box$w+sideMargin, box$y+box$h+sideMargin,
-  col = "#FFFFFF", border=NA)
-drawIdPanelsRects(idPanels)
-dev.off()
-
-jsonlite::write_json(idPanels, fileOutJson, auto_unbox = FALSE, digits = NA, pretty = TRUE)
