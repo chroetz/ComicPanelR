@@ -36,6 +36,12 @@ makeInner <- function(border, panelStyle) {
     polyInner <- geos_difference(polyInner, segBuff)
   }
 
+  ng <- geos_num_geometries(polyInner)
+  if (ng > 1) {
+    areas <- sapply(1:ng, \(i) geos_area(geos_geometry_n(polyInner, i)))
+    polyInner <- geos_geometry_n(polyInner, which.max(areas))
+  }
+
   coords <- wk::wk_coords(geos_unique_points(polyInner))
   points <- geos_make_point(coords$x, coords$y)
   dsts <- sapply(p$path, \(seg) {
@@ -43,9 +49,11 @@ makeInner <- function(border, panelStyle) {
     geos_distance(segment, points)
   })
   excessDists <- dsts - rep(p$margin, each=nrow(dsts))
-  idxs <- apply(excessDists < eps, 2, which)
+  idxs <- apply(excessDists < eps, 2, which, simplify=FALSE)
   idxs <- lapply(idxs, \(idx) {
+    if (length(idx) == 0) return(idx)
     k <- which(diff(idx) != 1)
+    if (length(k) > 1) browser()
     stopifnot(length(k) < 2)
     if (length(k) == 0) return(idx)
     idx[c((k+1):length(idx), 1:k)]
@@ -113,4 +121,17 @@ drawTiling2 <- function(tiling) {
     center <- colMeans(path)
     drawNode(center, paste0("S", i), fill = "#444444", draw = "#AAAAAA", textColor= "#FFFFFF", type = "rect")
   }
+}
+
+endDirection <- function(path) {
+  n <- nrow(path)
+  if (n < 2) return(c(0, 0))
+  v <- path[n,]-path[n-1,]
+  v / sqrt(sum(v^2))
+}
+startDirection <- function(path) {
+  n <- nrow(path)
+  if (n < 2) return(c(0, 0))
+  v <- path[1,]-path[2,]
+  v / sqrt(sum(v^2))
 }

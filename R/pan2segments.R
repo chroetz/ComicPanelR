@@ -84,13 +84,15 @@ getTiling <- function(pan) {
     seq_len(nrow(sortedSides)),
     \(i) which(segmentContains(sortedSides[i,], segments, pan)))
 
-  segments <-
-    tibble::tibble(segment = segments) |>
-    tibble::rowid_to_column("segId")
-
   vertices <-
     tibble::tibble(coordinates = pan$coors) |>
     tibble::rowid_to_column("coorId")
+
+  segments <-
+    tibble::tibble(segment = segments) |>
+    tibble::rowid_to_column("segId") |>
+    dplyr::rowwise() |>
+    dplyr::mutate(path = list(makeStraightPath(segment, vertices)))
 
   sides <-
     tibble::tibble(

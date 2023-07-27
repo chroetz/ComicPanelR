@@ -1,10 +1,11 @@
-makeStraightPath <- function(seg, vertices) {
+makeStraightPath <- function(seg, vertices, n = 2) {
   A <- vertices$coordinates[seg[1],]
   B <- vertices$coordinates[seg[2],]
   v <- B - A
-  n <- 1e2 # TODO: 1e3 in production
   x <- seq(0, 1, length.out = n)
   path <- rep(A, each=n) + outer(x, v)
+  path[1, ] <- A
+  path[n, ] <- B
   return(path)
 }
 
@@ -26,9 +27,17 @@ getNormalVectors <- function(path, target = NULL, sameSign = TRUE) {
   return(normed)
 }
 
-sinifyPath <- function(path, time, amplitude) {
+interpolate <- function(path, n) {
+  time <- seq(0, 1, length.out = nrow(path))
+  targetTimes <- seq(0, 1, length.out = n)
+  do.call(
+    cbind,
+    lapply(seq_len(ncol(path)), \(j) stats::approx(time, path[,j], targetTimes)$y))
+}
+
+sinifyPath <- function(path, time, amplitude, n) {
+  path <- interpolate(path, n)
   normalVecs <- getNormalVectors(path)
-  n <- length(path)
   y <- sin(seq(0, 2*pi*time, length.out = n)) * amplitude
   return(path + normalVecs * y)
 }

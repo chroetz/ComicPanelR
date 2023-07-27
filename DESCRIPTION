@@ -16,5 +16,6 @@ Imports:
     graphics,
     grDevices,
     magick,
+    rlang,
     tibble,
     wk
