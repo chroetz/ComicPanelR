@@ -8,14 +8,20 @@ makeStraightPath <- function(seg, vertices) {
   return(path)
 }
 
-getNormalVectors <- function(path, target = NULL) {
+getNormalVectors <- function(path, target = NULL, sameSign = TRUE) {
   dff <- diff(path)
   rotated <- cbind(dff[,2], -dff[,1])
   normed <- rotated / sqrt(rowSums(rotated^2))
   normed <- normed[c(1, 1:nrow(normed), nrow(normed)),]
   normed <- (normed[1:nrow(path),]+normed[2:nrow(normed),])/2
   if (length(target) > 0) {
-    normed <- sign(rowSums((rep(target, each = nrow(path)) - path) * normed)) * normed
+    if (sameSign) {
+      sgn <- sign(sum(rowSums((rep(target, each = nrow(path)) - path) * normed)))
+      normed <- sgn*normed
+    } else {
+      sgn <- sign(rowSums((rep(target, each = nrow(path)) - path) * normed))
+      normed <- sgn * normed
+    }
   }
   return(normed)
 }

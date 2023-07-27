@@ -20,52 +20,49 @@ getPanelSpaceBorderPath <- function(tiling) {
 
 
 
-makeInner <- function(border, center, panelStyle) {
-  clipCondition <-
+makeInner <- function(border, panelStyle) {
+  p <-
     border |>
     left_join(panelStyle, by="segId")
-  border |>
-    left_join(panelStyle, by="segId") |>
-    rowwise() |>
-    #mutate(inner = list(moveNormal(path, center, margin))) |>
-    mutate(movedPath = list(moveNormal(path, center, margin))) |>
-    mutate(inner = list(clipPath(movedPath, clipCondition, center, segId))) |>
-    select(segId, inner) |>
-    ungroup()
-}
 
-clipPath <- function(path, conditions, target, excludeSegId) {
-  for (i in seq_len(nrow(conditions))) {
-    if (conditions$segId[i] == excludeSegId) next
-    path <- clipPathOne(path, conditions$path[[i]], target, conditions$margin[[i]])
+  path <- do.call(rbind, p$path)
+  polyTmp <- geos_make_polygon(path[,1], path[,2], ring_id = 1)
+  polyBorder <- geos_make_valid(polyTmp)
+  polyInner <- polyBorder
+
+  for (k in seq_len(nrow(p))) {
+    line <- geos_make_linestring(p$path[[k]][,1], p$path[[k]][,2])
+    segBuff <- geos_buffer(line, distance = p$margin[[k]])
+    polyInner <- geos_difference(polyInner, segBuff)
   }
-  return(path)
-}
 
-clipPathOne <- function(path, other, target, threshold) {
-  dim(target) <- c(1, 2)
-  eps <- sqrt(.Machine$double.eps)
-  n <- nrow(path)
-  m <- nrow(other)
-  if (n == 0 || m == 0) return(path)
-  dstMat <- matrix(sqrt(rowSums((path[rep(1:n, each=m),]-other[rep(1:m, times=n),])^2)), nrow=m)
-  dsts <- apply(dstMat, 2, min)
-  sel <- dsts > threshold-eps
-  if (sum(sel) <= 1) return(path[sel, , drop=FALSE])
-  middleIdx <- which(sel)[round(sum(sel)/2)]
-  topN <- which(1:n > middleIdx & !sel)[1] - 1
-  if (is.na(topN)) topN <- n
-  bottomN <- rev(which(1:n < middleIdx & !sel))[1] + 1
-  if (is.na(bottomN)) bottomN <- 1
-  return(path[bottomN:topN, , drop=FALSE])
-}
+  coords <- wk::wk_coords(geos_unique_points(polyInner))
+  points <- geos_make_point(coords$x, coords$y)
+  dsts <- sapply(p$path, \(seg) {
+    segment <- geos_make_linestring(seg[,1], seg[,2])
+    geos_distance(segment, points)
+  })
+  excessDists <- dsts - rep(p$margin, each=nrow(dsts))
+  # TODO: do not allow to collect non-conscutive points, except at end
+  inner <- apply(excessDists < eps, 2, \(sel) coords[sel,c("x", "y")] |> as.matrix(), simplify=FALSE)
 
-moveNormal <- function(path, target, distance) {
-  nrms <- getNormalVectors(path)
-  sgn <- sign(sum(rowSums((rep(target, each = nrow(path)) - path) * nrms)))
-  nrms <- sgn*nrms
-  movedPath <- path + nrms * distance
-  return(movedPath)
+  # order the paths
+  for (i in seq_along(inner)) {
+    i1 <- i
+    i2 <- if (i+1 > length(inner)) 1 else i+1
+    if (nrow(inner[[i1]]) == 0 || nrow(inner[[i2]]) == 0) next
+    if (any(tail(inner[[i1]], 1) != head(inner[[i2]], 1))) {
+      inner[[i1]] <- inner[[i1]][rev(seq_len(nrow(inner[[i1]]))),]
+    }
+    if (any(tail(inner[[i1]], 1) != head(inner[[i2]], 1))) {
+      browser() # TODO bug...
+    }
+    force(1)
+  }
+
+  p$inner <- inner
+
+  return(p)
 }
 
 
