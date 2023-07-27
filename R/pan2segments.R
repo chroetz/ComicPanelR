@@ -85,33 +85,33 @@ getTiling <- function(pan) {
     \(i) which(segmentContains(sortedSides[i,], segments, pan)))
 
   vertices <-
-    tibble::tibble(coordinates = pan$coors) |>
-    tibble::rowid_to_column("coorId")
+    tibble(coordinates = pan$coors) |>
+    rowid_to_column("coorId")
 
   segments <-
-    tibble::tibble(segment = segments) |>
-    tibble::rowid_to_column("segId") |>
-    dplyr::rowwise() |>
-    dplyr::mutate(path = list(makeStraightPath(segment, vertices)))
+    tibble(segment = segments) |>
+    rowid_to_column("segId") |>
+    rowwise() |>
+    mutate(path = list(makeStraightPath(.data$segment, vertices)))
 
   sides <-
-    tibble::tibble(
+    tibble(
       directed = directedSides,
       sorted = sortedSides,
       panel = panelIds,
       direction = sideDirection,
       segments = segmentIdsInSide
     ) |>
-    tibble::rowid_to_column("sideId")
+    rowid_to_column("sideId")
 
-  panels <- tibble::tibble(
+  panels <- tibble(
     panelId = seq_len(nrow(pan$panels)),
     vertices = lapply(seq_len(nrow(pan$panels)), \(i) pan$panels[i,]),
   ) |>
-    dplyr::rowwise() |>
-    dplyr::mutate(sides = list(.env$sides |> dplyr::filter(.data$panel == panelId) |> dplyr::pull(sideId))) |>
-    dplyr::mutate(segments = list(unlist(.env$sides |> dplyr::filter(.data$panel == panelId) |> dplyr::pull(segments)))) |>
-    dplyr::ungroup()
+    rowwise() |>
+    mutate(sides = list(.env$sides |> filter(.data$panel == panelId) |> pull(sideId))) |>
+    mutate(segments = list(unlist(.env$sides |> filter(.data$panel == panelId) |> pull(segments)))) |>
+    ungroup()
 
   return(list(
     segments = segments,

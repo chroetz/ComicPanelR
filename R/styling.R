@@ -11,7 +11,7 @@ getPanelSpaceBorderPath <- function(tiling) {
         if (ordering$reverse[j]) p <- p[rev(seq_len(nrow(p))),]
         return(p)
       })
-    res <- tibble::tibble(segId = segIds, path = paths)
+    res <- tibble(segId = segIds, path = paths)
     return(res)
   })
   return(borders)

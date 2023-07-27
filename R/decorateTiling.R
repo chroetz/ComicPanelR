@@ -74,7 +74,7 @@ getSegmentOrdering <- function(segments) {
     rowIdxs <- c(rowIdxs, nextRowIdx)
     current <- setdiff(segments[nextRowIdx, ], current)
   }
-  return(tibble::tibble(rowIdxs = unname(rowIdxs), reverse = unname(colIdxs == 2)))
+  return(tibble(rowIdxs = unname(rowIdxs), reverse = unname(colIdxs == 2)))
 }
 
 
