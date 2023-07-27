@@ -97,9 +97,13 @@ drawIdPanelsRects <- function(pan, box) {
   }
 }
 
-drawNode <- function(pos, txt, r = 0.5, fill="#EEEEEE", draw="#000000", textColor = "#000000") {
-  theta <- seq(0, 2*pi, length.out = 100)
-  graphics::polygon(pos[1]+r*cos(theta), pos[2]+r*sin(theta), border=draw, lwd=2, col=fill)
+drawNode <- function(pos, txt, r = 0.5, fill="#EEEEEE", draw="#000000", textColor = "#000000", type = "circle") {
+  if (type == "circle") {
+    theta <- seq(0, 2*pi, length.out = 100)
+    graphics::polygon(pos[1]+r*cos(theta), pos[2]+r*sin(theta), border=draw, lwd=2, col=fill)
+  } else {
+    graphics::rect(pos[1]-r, pos[2]-r/2, pos[1]+r, pos[2]+r/2, border=draw, lwd=2, col=fill)
+  }
   graphics::text(pos[1], pos[2], txt, adj = c(0.5, 0.5), col = textColor)
 }
 

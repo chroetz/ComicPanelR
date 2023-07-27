@@ -12,7 +12,9 @@ RoxygenNote: 7.2.3
 Imports: 
     ConfigOpts,
     dplyr,
+    geos,
     graphics,
     grDevices,
     magick,
-    tibble
+    tibble,
+    wk

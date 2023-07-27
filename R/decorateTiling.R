@@ -73,6 +73,7 @@ drawTiling <- function(tiling) {
 
   colors <- sample(grDevices::rainbow(nrow(tiling$panels), alpha=0.3))
   for (i in seq_len(nrow(tiling$panels))) {
+    vertices <- tiling$vertices$coordinates[tiling$panels$vertices[[i]], ]
     segIds <- tiling$panels$segments[[i]]
     segments <- tiling$segments$segment[segIds,]
     ordering <- getSegmentOrdering(segments)
@@ -84,17 +85,16 @@ drawTiling <- function(tiling) {
         if (ordering$reverse[j]) p <- p[rev(seq_len(nrow(p))),]
         return(p)
       })
-
     path <- do.call(rbind, paths)
     graphics::polygon(path[,1], path[,2], border="#000000", lwd=2, col=colors[i])
-    center <- colMeans(path)
+    center <- colMeans(vertices)
     graphics::text(center[1], center[2], paste0("P", i), adj = c(0.5, 0.5))
   }
 
   for (i in seq_len(nrow(tiling$segments))) {
     path <- tiling$segments$path[[i]]
     center <- colMeans(path)
-    drawNode(center, paste0("S", i), fill = "#555555", draw = "#FFFFFF", textColor= "#FFFFFF")
+    drawNode(center, paste0("S", i), fill = "#444444", draw = "#AAAAAA", textColor= "#FFFFFF", type = "rect")
   }
 }
 

@@ -19,8 +19,8 @@ getPanelSpaceBorderPath <- function(tiling) {
 
 
 
-
 makeInner <- function(border, panelStyle) {
+  eps <- sqrt(.Machine$double.eps)
   p <-
     border |>
     left_join(panelStyle, by="segId")
@@ -43,22 +43,23 @@ makeInner <- function(border, panelStyle) {
     geos_distance(segment, points)
   })
   excessDists <- dsts - rep(p$margin, each=nrow(dsts))
-  # TODO: do not allow to collect non-conscutive points, except at end
-  inner <- apply(excessDists < eps, 2, \(sel) coords[sel,c("x", "y")] |> as.matrix(), simplify=FALSE)
-
-  # order the paths
-  for (i in seq_along(inner)) {
-    i1 <- i
-    i2 <- if (i+1 > length(inner)) 1 else i+1
-    if (nrow(inner[[i1]]) == 0 || nrow(inner[[i2]]) == 0) next
-    if (any(tail(inner[[i1]], 1) != head(inner[[i2]], 1))) {
-      inner[[i1]] <- inner[[i1]][rev(seq_len(nrow(inner[[i1]]))),]
+  idxs <- apply(excessDists < eps, 2, which)
+  idxs <- lapply(idxs, \(idx) {
+    k <- which(diff(idx) != 1)
+    stopifnot(length(k) < 2)
+    if (length(k) == 0) return(idx)
+    idx[c((k+1):length(idx), 1:k)]
+  })
+  for (i in seq_len(length(idxs)-1)) {
+    if (length(idxs[[i]]) + length(idxs[[i+1]]) >= 3) {
+      if (last(idxs[[i]]) != first(idxs[[i+1]])) {
+        idxs <- lapply(idxs, rev)
+      }
+      break
     }
-    if (any(tail(inner[[i1]], 1) != head(inner[[i2]], 1))) {
-      browser() # TODO bug...
-    }
-    force(1)
   }
+
+  inner <- lapply(idxs, \(idx) coords[idx, c("x", "y")] |> as.matrix())
 
   p$inner <- inner
 
@@ -97,7 +98,8 @@ drawTiling2 <- function(tiling) {
   for (i in seq_len(nrow(tiling$panels))) {
     path <- do.call(rbind, tiling$panels$inner[[i]]$inner)
     graphics::polygon(path[,1], path[,2], border="#000000", lwd=2, col=colors[i])
-    center <- colMeans(path)
+    vertices <- tiling$vertices$coordinates[tiling$panels$vertices[[i]], ]
+    center <- colMeans(vertices)
     graphics::text(center[1], center[2], paste0("P", i), adj = c(0.5, 0.5))
   }
 
@@ -109,6 +111,6 @@ drawTiling2 <- function(tiling) {
   for (i in seq_len(nrow(tiling$segments))) {
     path <- tiling$segments$path[[i]]
     center <- colMeans(path)
-    drawNode(center, paste0("S", i), fill = "#555555", draw = "#FFFFFF", textColor= "#FFFFFF")
+    drawNode(center, paste0("S", i), fill = "#444444", draw = "#AAAAAA", textColor= "#FFFFFF", type = "rect")
   }
 }
