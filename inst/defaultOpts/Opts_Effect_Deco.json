@@ -1,0 +1,6 @@
+{
+    "_class": ["Deco", "Effect", "Opts"],
+    "type": "sine",
+    "amplitude": 1,
+    "frequency": 1
+}

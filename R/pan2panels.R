@@ -19,7 +19,11 @@ makePanels <- function(pan, marginOpts) {
     mutate(inner = list(makeInner(data$side, data$margin))) |>
     ungroup() |>
     unnest(c(data, inner)) |>
-    select(panelId, segmentId, side, inner)
+    rowwise() |>
+    filter(nrow(inner) > 0) |>
+    ungroup() |>
+    left_join(pan$idGraph, by = join_by(panelId, segmentId)) |>
+    select(panelId, sideId, segmentId, side, inner)
 
   return(panels)
 }
@@ -95,7 +99,6 @@ makeInner <- function(sides, margin) {
   idxs <- lapply(idxs, \(idx) {
     if (length(idx) == 0) return(idx)
     k <- which(diff(idx) != 1)
-    if (length(k) > 1) browser()
     stopifnot(length(k) < 2)
     if (length(k) == 0) return(idx)
     idx[c((k+1):length(idx), 1:k)]
@@ -117,7 +120,7 @@ makeInner <- function(sides, margin) {
 
 
 
-renderPanels <- function(panels, pan, fileOut, dpi=300) {
+renderPanels <- function(panels, pan, fileOut, dpi=300, drawBorder=TRUE, drawSegText=TRUE, drawPanelText=TRUE) {
   geometry <- pan$geometry
   box <- makeBox(0, 0, geometry$size$w, geometry$size$h)
   cmPerInch <- 2.54
@@ -135,15 +138,14 @@ renderPanels <- function(panels, pan, fileOut, dpi=300) {
   graphics::rect(
     box$x-geometry$sideMargin, box$y-geometry$sideMargin, box$x+box$w+geometry$sideMargin, box$y+box$h+geometry$sideMargin,
     col = "#FFFFFF", border=NA)
-  drawPanels(panels, pan)
+  drawPanels(panels, pan, drawBorder, drawSegText, drawPanelText)
   dev.off()
 }
 
-drawPanels <- function(panels, pan) {
+drawPanels <- function(panels, pan, drawBorder, drawSegText, drawPanelText) {
 
   panels <-
     panels |>
-    left_join(pan$idGraph, by = join_by(panelId, segmentId)) |>
     arrange(panelId, sideId)
   colors <- sample(grDevices::rainbow(nrow(panels), alpha=0.3))
   p <- nest(panels, data = c(segmentId, side, inner, sideId))
@@ -151,16 +153,22 @@ drawPanels <- function(panels, pan) {
     d <- p$data[[i]]
     inner <- do.call(rbind, d$inner)
     graphics::polygon(inner[,1], inner[,2], border="#000000", lwd=2, col=colors[i])
-    border <- do.call(rbind, d$side)
-    graphics::polygon(border[,1], border[,2], border="#0000FF", lwd=1)
-    vertices <- pan$vertices[pan$idPanels[[i]], ]
-    center <- colMeans(vertices)
-    graphics::text(center[1], center[2], paste0("P", i), adj = c(0.5, 0.5))
+    if (drawBorder) {
+      border <- do.call(rbind, d$side)
+      graphics::polygon(border[,1], border[,2], border="#0000FF", lwd=1)
+    }
+    if (drawPanelText) {
+      vertices <- pan$vertices[pan$idPanels[[i]], ]
+      center <- colMeans(vertices)
+      graphics::text(center[1], center[2], paste0("P", i), adj = c(0.5, 0.5))
+    }
   }
 
-  for (i in seq_len(nrow(pan$borders))) {
-    path <- pan$borders$coorSegments[[i]]
-    center <- colMeans(path)
-    drawNode(center, paste0("S", i), fill = "#444444", draw = "#AAAAAA", textColor= "#FFFFFF", type = "rect")
+  if (drawSegText) {
+    for (i in seq_len(nrow(pan$borders))) {
+      path <- pan$borders$coorSegments[[i]]
+      center <- colMeans(path)
+      drawNode(center, paste0("S", i), fill = "#444444", draw = "#AAAAAA", textColor= "#FFFFFF", type = "rect")
+    }
   }
 }

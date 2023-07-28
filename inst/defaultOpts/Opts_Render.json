@@ -1,0 +1,9 @@
+{
+    "_class": ["Render", "Opts"],
+    "dpi": 300,
+    "default": {
+        "_class": ["Frame", "Opts"]
+    },
+    "panels": {},
+    "sides": {}
+}

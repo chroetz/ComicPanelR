@@ -51,9 +51,12 @@ getNormalVectors <- function(path, target = NULL, sameSign = TRUE) {
   return(normed)
 }
 
-interpolate <- function(path, n) {
-  time <- seq(0, 1, length.out = nrow(path))
-  targetTimes <- seq(0, 1, length.out = n)
+interpolate <- function(path, nPoints) {
+  dsts <- sqrt(rowSums((path[-1,,drop=FALSE] - path[-nrow(path),,drop=FALSE])^2))
+  sel <- dsts > sqrt(.Machine$double.eps)
+  time <- c(0, cumsum(dsts[sel])) / sum(dsts[sel])
+  path <- path[c(TRUE, sel), ]
+  targetTimes <- seq(0, 1, length.out = nPoints)
   do.call(
     cbind,
     lapply(seq_len(ncol(path)), \(j) stats::approx(time, path[,j], targetTimes)$y))

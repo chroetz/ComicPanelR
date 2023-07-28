@@ -1,0 +1,6 @@
+{
+    "_class": ["Frame", "Opts"],
+    "draw": true,
+    "width": 3,
+    "linetype": "solid"
+}
