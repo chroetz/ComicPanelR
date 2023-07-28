@@ -1,12 +1,14 @@
-decorate <- function(tiling, deco) {
+decorate <- function(borders, deco) {
   className <- ConfigOpts::getClassAt(deco, 2)
-  path <- tiling$segments$path[[deco$borderId]]
-  tiling$segments$path[[deco$borderId]] <- switch(
-    className,
-    "Sine" = decorateSine(path, deco),
-    stop(paste0("Unknown Deco ", className))
-  )
-  return(tiling)
+  for (segId in deco$segmentIds) {
+    path <- borders$coorSegments[[segId]]
+    borders$coorSegments[[segId]] <- switch(
+      className,
+      "Sine" = decorateSine(path, deco),
+      stop(paste0("Unknown Deco ", className))
+    )
+  }
+  return(borders)
 }
 
 makeStraightPath <- function(seg, vertices, n = 2) {
@@ -57,9 +59,12 @@ sinifyPath <- function(path, time, amplitude, n) {
   return(path + normalVecs * y)
 }
 
-tiling2image <- function(tiling, box, geometry, fileOut) {
+
+renderPan <- function(pan, fileOut, dpi = 300) {
+  geometry <- parti$geometry
+  box <- makeBox(0, 0, geometry$size$w, geometry$size$h)
   cmPerInch <- 2.54
-  pxPerInch <- 300 # dpi
+  pxPerInch <- dpi
   pxPerCm <- pxPerInch/cmPerInch
   grDevices::png(
     filename = fileOut,
@@ -73,52 +78,46 @@ tiling2image <- function(tiling, box, geometry, fileOut) {
   graphics::rect(
     box$x-geometry$sideMargin, box$y-geometry$sideMargin, box$x+box$w+geometry$sideMargin, box$y+box$h+geometry$sideMargin,
     col = "#FFFFFF", border=NA)
-  drawTiling(tiling)
+  drawPan(pan)
   dev.off()
 }
 
-getSegmentOrdering <- function(segments) {
-  rowIdxs <- 1
-  colIdxs <- 1
-  current <- segments[1, 2]
-  for (i in seq_len(nrow(segments)-1)) {
-    candidates <- which(segments == current, arr.ind=TRUE)
-    sel <- !(candidates[, "row"] %in% rowIdxs)
-    nextRowIdx <- candidates[sel, "row"]
-    colIdxs <- c(colIdxs, candidates[sel, "col"])
-    rowIdxs <- c(rowIdxs, nextRowIdx)
-    current <- setdiff(segments[nextRowIdx, ], current)
-  }
-  return(tibble(rowIdxs = unname(rowIdxs), reverse = unname(colIdxs == 2)))
-}
 
+drawPan <- function(pan) {
 
-drawTiling <- function(tiling) {
+  n <- length(pan$idPanels)
 
-  colors <- sample(grDevices::rainbow(nrow(tiling$panels), alpha=0.3))
-  for (i in seq_len(nrow(tiling$panels))) {
-    vertices <- tiling$vertices$coordinates[tiling$panels$vertices[[i]], ]
-    segIds <- tiling$panels$segments[[i]]
-    segments <- tiling$segments$segment[segIds,]
-    ordering <- getSegmentOrdering(segments)
-    segIds <- segIds[ordering$rowIdxs]
-    paths <- lapply(
-      seq_len(nrow(ordering)),
-      \(j) {
-        p <- tiling$segments$path[[segIds[j]]]
-        if (ordering$reverse[j]) p <- p[rev(seq_len(nrow(p))),]
-        return(p)
-      })
+  colors <- sample(grDevices::rainbow(n, alpha=0.3))
+  for (i in seq_len(n)) {
+    vertexIds <- pan$idPanels[[i]]
+    idSegments <- cbind(vertexIds, c(vertexIds[-1], vertexIds[1]))
+    paths <- apply(idSegments, 1, getBorder, pan = pan, simplify=FALSE)
     path <- do.call(rbind, paths)
+    vertices <- pan$vertices[vertexIds, ]
     graphics::polygon(path[,1], path[,2], border="#000000", lwd=2, col=colors[i])
     center <- colMeans(vertices)
     graphics::text(center[1], center[2], paste0("P", i), adj = c(0.5, 0.5))
   }
 
-  for (i in seq_len(nrow(tiling$segments))) {
-    path <- tiling$segments$path[[i]]
+  for (i in seq_len(nrow(pan$borders))) {
+    path <- pan$borders$coorSegments[[i]]
     center <- colMeans(path)
     drawNode(center, paste0("S", i), fill = "#444444", draw = "#AAAAAA", textColor= "#FFFFFF", type = "rect")
   }
 }
 
+getBorder <- function(idSeg, pan) {
+  idSegSort <- sort(idSeg)
+  idSegments <- pan$idSegments[pan$borders$segmentId, ]
+  idx <- which(idSegments[, 1] == idSegSort[1] & idSegments[, 2] == idSegSort[2])
+  b <- pan$borders$coorSegments[[idx]]
+  if (!all(idSeg == idSegSort)) b <- b[rev(seq_len(nrow(b))),]
+  return(b)
+}
+
+getSegmentId <- function(idSeg, pan) {
+  idSegSort <- sort(idSeg)
+  idSegments <- pan$idSegments[pan$borders$segmentId, ]
+  idx <- which(idSegments[, 1] == idSegSort[1] & idSegments[, 2] == idSegSort[2])
+  return(idx)
+}

@@ -1,5 +1,4 @@
 {
     "_class": ["Adjust", "Transform", "Opts"],
-    "coor": 1,
     "adjustment": [0, -1]
 }

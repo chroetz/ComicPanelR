@@ -1,3 +1,29 @@
+page2parti <- function(page) {
+  box <- makeBox(0, 0, page$geometry$size$w, page$geometry$size$h)
+  layout <- page$panelArea
+  coorPanels <- getLayoutPanels(layout, box)
+  idPanelsAndVertices <- coorPanels2Id(coorPanels)
+  vertices <- idPanelsAndVertices$vertices
+  rectIdPanels <- idPanelsAndVertices$idPanels
+  panelGraph <- idPanels2panelGraph(rectIdPanels, vertices)
+  polygonIdPanels <- idPanelsFromPanelGraph(panelGraph$idGraph, panelGraph$idSegments)
+  names(polygonIdPanels) <- paste0("P", seq_along(polygonIdPanels))
+  parti <- ConfigOpts::makeOpts(
+    "Parti",
+    geometry = page$geometry,
+    vertices = vertices,
+    idPanels = polygonIdPanels)
+  return(parti)
+}
+
+createBaseParti <- function(fileIn, fileOutPng, fileOutJson) {
+  page <- ConfigOpts::readOpts(fileIn, "Page")
+  parti <- page2parti(page)
+  renderParti(parti, fileOutPng)
+  ConfigOpts::writeOpts(parti, fileOutJson)
+}
+
+
 rectPanel <- function(x, y, w, h) {
   matrix(
     c(x, y,
@@ -59,10 +85,11 @@ getLayoutPanels <- function(layout, box) {
 
 
 coorPanels2Id <- function(panels) {
+  eps <- sqrt(.Machine$double.eps)
   coors <- do.call(rbind, panels)
   n <- nrow(coors)
   isSame <- matrix(
-    rowSums(abs(coors[rep(1:n, each=n),] - coors[rep(1:n, times=n),])) < sqrt(.Machine$double.eps),
+    rowSums(abs(coors[rep(1:n, each=n),] - coors[rep(1:n, times=n),])) < eps,
     nrow = n)
   representativeIdx <- apply(isSame, 1, which.max)
   sel <- representativeIdx == 1:n
@@ -73,27 +100,29 @@ coorPanels2Id <- function(panels) {
 
   panelCoorsCheck <- apply(panelsCoorIds, 1, \(row) uniqueCoors[row, ], simplify=FALSE)
   for (i in seq_along(panelCoorsCheck)) {
-    stopifnot(mean(abs(panelCoorsCheck[[i]] - panels[[i]])) < sqrt(.Machine$double.eps))
+    stopifnot(mean(abs(panelCoorsCheck[[i]] - panels[[i]])) < eps)
   }
 
+  panels <- apply(panelsCoorIds, 1, force, simplify=FALSE)
+
   list(
-    coors = uniqueCoors,
-    panels = panelsCoorIds)
+    vertices = uniqueCoors,
+    idPanels = panels)
 }
 
-drawIdPanelsRects <- function(pan, box) {
+drawPartiPolygons <- function(parti, box) {
 
-  colors <- sample(grDevices::rainbow(nrow(pan$panels), alpha=0.3))
-  for (i in seq_len(nrow(pan$panels))) {
-    coors <- pan$coors[pan$panels[i, ], ]
-    # TODO: if any side of the quadrilateral has a deco, apply it
+  colors <- sample(grDevices::rainbow(length(parti$idPanels), alpha=0.3))
+  for (i in seq_along(parti$idPanels)) {
+    p <- parti$idPanels[[i]]
+    coors <- parti$vertices[p, ]
     graphics::polygon(coors[,1], coors[,2], border="#000000", lwd=2, col=colors[i])
     center <- colMeans(coors)
     graphics::text(center[1], center[2], paste0("P", i), adj = c(0.5, 0.5))
   }
 
-  for (i in seq_len(nrow(pan$coors))) {
-    drawNode(pan$coors[i,], paste0("C", i))
+  for (i in seq_len(nrow(parti$vertices))) {
+    drawNode(parti$vertices[i,], paste0("V", i))
   }
 }
 
@@ -107,9 +136,11 @@ drawNode <- function(pos, txt, r = 0.5, fill="#EEEEEE", draw="#000000", textColo
   graphics::text(pos[1], pos[2], txt, adj = c(0.5, 0.5), col = textColor)
 }
 
-pan2image <- function(pan, box, geometry, fileOut) {
+renderParti <- function(parti, fileOut, dpi = 300) {
+  geometry <- parti$geometry
+  box <- makeBox(0, 0, geometry$size$w, geometry$size$h)
   cmPerInch <- 2.54
-  pxPerInch <- 300 # dpi
+  pxPerInch <- dpi
   pxPerCm <- pxPerInch/cmPerInch
   grDevices::png(
     filename = fileOut,
@@ -123,6 +154,6 @@ pan2image <- function(pan, box, geometry, fileOut) {
   graphics::rect(
     box$x-geometry$sideMargin, box$y-geometry$sideMargin, box$x+box$w+geometry$sideMargin, box$y+box$h+geometry$sideMargin,
     col = "#FFFFFF", border=NA)
-  drawIdPanelsRects(pan)
+  drawPartiPolygons(parti)
   dev.off()
 }

@@ -1,0 +1,11 @@
+{
+    "_class": ["Parti", "Opts"],
+    "geometry": {
+        "_class": ["Geometry", "Opts"]
+    },
+    "vertices": [[0,0],[0,1]],
+    "idPanels": {
+        "P1": [1,2,3],
+        "P2": [2,3,4,5]
+    }
+}

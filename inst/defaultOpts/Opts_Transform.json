@@ -1,3 +1,4 @@
 {
-    "_class": ["Transform", "Opts"]
+    "_class": ["Transform", "Opts"],
+    "vertexIds": [1, 2]
 }

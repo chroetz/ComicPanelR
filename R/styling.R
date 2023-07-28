@@ -1,38 +1,28 @@
-getPanelSpaceBorderPath <- function(tiling) {
-  borders <- lapply(seq_len(nrow(tiling$panels)), \(i) {
-    segIds <- tiling$panels$segments[[i]]
-    segments <- tiling$segments$segment[segIds,]
-    ordering <- getSegmentOrdering(segments)
-    segIds <- segIds[ordering$rowIdxs]
-    paths <- lapply(
-      seq_len(nrow(ordering)),
-      \(j) {
-        p <- tiling$segments$path[[segIds[j]]]
-        if (ordering$reverse[j]) p <- p[rev(seq_len(nrow(p))),]
-        return(p)
-      })
-    res <- tibble(segId = segIds, path = paths)
-    return(res)
+pan2panels <- function(pan) {
+  n <- length(pan$idPanels)
+  panels <- lapply(seq_len(n), \(i) {
+    vertexIds <- pan$idPanels[[i]]
+    idSegments <- cbind(vertexIds, c(vertexIds[-1], vertexIds[1]))
+    segmentIds <- apply(idSegments, 1, getSegmentId, pan = pan)
+    paths <- apply(idSegments, 1, getBorder, pan = pan, simplify=FALSE)
+    tibble(panelId = i, segmentId = segmentIds, side = paths)
   })
-  return(borders)
+  return(bind_rows(panels))
 }
 
 
 
-makeInner <- function(border, panelStyle) {
+makeInner <- function(sides, margin) {
   eps <- sqrt(.Machine$double.eps)
-  p <-
-    border |>
-    left_join(panelStyle, by="segId")
-
-  path <- do.call(rbind, p$path)
+  n <- length(sides)
+  path <- do.call(rbind, sides)
   polyTmp <- geos_make_polygon(path[,1], path[,2], ring_id = 1)
   polyBorder <- geos_make_valid(polyTmp)
   polyInner <- polyBorder
 
-  for (k in seq_len(nrow(p))) {
-    line <- geos_make_linestring(p$path[[k]][,1], p$path[[k]][,2])
-    segBuff <- geos_buffer(line, distance = p$margin[[k]])
+  for (k in seq_len(n)) {
+    line <- geos_make_linestring(sides[[k]][,1], sides[[k]][,2])
+    segBuff <- geos_buffer(line, distance = margin[[k]])
     polyInner <- geos_difference(polyInner, segBuff)
   }
 
@@ -44,11 +34,11 @@ makeInner <- function(border, panelStyle) {
 
   coords <- wk::wk_coords(geos_unique_points(polyInner))
   points <- geos_make_point(coords$x, coords$y)
-  dsts <- sapply(p$path, \(seg) {
+  dsts <- sapply(sides, \(seg) {
     segment <- geos_make_linestring(seg[,1], seg[,2])
     geos_distance(segment, points)
   })
-  excessDists <- dsts - rep(p$margin, each=nrow(dsts))
+  excessDists <- dsts - rep(margin, each=nrow(dsts))
   idxs <- apply(excessDists < eps, 2, which, simplify=FALSE)
   idxs <- lapply(idxs, \(idx) {
     if (length(idx) == 0) return(idx)
@@ -69,9 +59,7 @@ makeInner <- function(border, panelStyle) {
 
   inner <- lapply(idxs, \(idx) coords[idx, c("x", "y")] |> as.matrix())
 
-  p$inner <- inner
-
-  return(p)
+  return(inner)
 }
 
 
