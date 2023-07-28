@@ -1,3 +1,14 @@
+decorate <- function(tiling, deco) {
+  className <- ConfigOpts::getClassAt(deco, 2)
+  path <- tiling$segments$path[[deco$borderId]]
+  tiling$segments$path[[deco$borderId]] <- switch(
+    className,
+    "Sine" = decorateSine(path, deco),
+    stop(paste0("Unknown Deco ", className))
+  )
+  return(tiling)
+}
+
 makeStraightPath <- function(seg, vertices, n = 2) {
   A <- vertices$coordinates[seg[1],]
   B <- vertices$coordinates[seg[2],]
@@ -33,6 +44,10 @@ interpolate <- function(path, n) {
   do.call(
     cbind,
     lapply(seq_len(ncol(path)), \(j) stats::approx(time, path[,j], targetTimes)$y))
+}
+
+decorateSine <- function(path, deco) {
+  sinifyPath(path, time=deco$time, amplitude=deco$amplitude, n=deco$n)
 }
 
 sinifyPath <- function(path, time, amplitude, n) {

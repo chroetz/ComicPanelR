@@ -1,0 +1,6 @@
+{
+    "_class": ["Sine", "Deco", "Opts"],
+    "time": 2,
+    "amplitude": 0.5,
+    "n": 100 
+}
