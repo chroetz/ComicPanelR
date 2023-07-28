@@ -1,3 +1,12 @@
+createTransformedParti <- function(fileInParti, fileInTransform, fileOutPng, fileOutJson) {
+  parti <- ConfigOpts::readOpts(fileInParti)
+  transformOpts <- ConfigOpts::readOpts(fileInTransform, c("Transform", "List"))
+  parti <- transformParti(parti, transformOpts$list)
+  renderParti(parti, fileOutPng)
+  ConfigOpts::writeOpts(parti, fileOutJson)
+}
+
+
 transform <- function(parti, transform) {
   className <- ConfigOpts::getClassAt(transform, 2)
   parti <- switch(

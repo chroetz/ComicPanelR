@@ -1,3 +1,14 @@
+createDecoratedPan <- function(fileInParti, fileInDeco, fileOutPng, fileOutRds) {
+  parti <- ConfigOpts::readOpts(fileInParti, "Parti")
+  decoOpts <- ConfigOpts::readOpts(fileInDeco, c("Deco", "List"))
+  pan <- parti2pan(parti)
+  for (deco in decoOpts$list) {
+    pan$borders <- decorate(pan$borders, deco)
+  }
+  renderPan(pan, fileOutPng)
+  saveRDS(pan, fileOutRds)
+}
+
 decorate <- function(borders, deco) {
   className <- ConfigOpts::getClassAt(deco, 2)
   for (segId in deco$segmentIds) {
@@ -61,7 +72,7 @@ sinifyPath <- function(path, time, amplitude, n) {
 
 
 renderPan <- function(pan, fileOut, dpi = 300) {
-  geometry <- parti$geometry
+  geometry <- pan$geometry
   box <- makeBox(0, 0, geometry$size$w, geometry$size$h)
   cmPerInch <- 2.54
   pxPerInch <- dpi

@@ -1,9 +1,0 @@
-{
-    "_class": ["Comic", "Opts"],
-    "geometry": {
-        "_class": ["Geometry", "Opts"]
-    },
-    "pages": {
-        "_class": ["Page", "List", "Opts"]
-    }
-}

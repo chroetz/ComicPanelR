@@ -1,0 +1,4 @@
+{
+    "_class": ["ToPageEnd", "Effect", "Opts"],
+    "side": ["top", "left", "right", "bottom"]
+}

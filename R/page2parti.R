@@ -16,8 +16,8 @@ page2parti <- function(page) {
   return(parti)
 }
 
-createBaseParti <- function(fileIn, fileOutPng, fileOutJson) {
-  page <- ConfigOpts::readOpts(fileIn, "Page")
+createBaseParti <- function(fileInPage, fileOutPng, fileOutJson) {
+  page <- ConfigOpts::readOpts(fileInPage, "Page")
   parti <- page2parti(page)
   renderParti(parti, fileOutPng)
   ConfigOpts::writeOpts(parti, fileOutJson)

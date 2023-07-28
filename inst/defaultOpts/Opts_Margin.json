@@ -1,0 +1,6 @@
+{
+    "_class": ["Margin", "Opts"],
+    "default": 0.25,
+    "panels": {},
+    "sides": {}
+}
