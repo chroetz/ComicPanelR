@@ -86,16 +86,16 @@ renderPan <- function(pan, fileOut, dpi = 300) {
     width = round(geometry$size$w * pxPerCm),
     height = round(geometry$size$h * pxPerCm),
     res = 300)
-  par(mar = c(0,0,0,0), xaxs = "i", xaxt="n", yaxs = "i", yaxt="n", bg="#FF0000")
-  plot.new()
+  graphics::par(mar = c(0,0,0,0), xaxs = "i", xaxt="n", yaxs = "i", yaxt="n", bg="#FF0000")
+  graphics::plot.new()
   brdr <- geometry$sideMargin + geometry$bleed
-  plot.window(xlim = c(box$x-brdr, box$x+box$w+brdr), ylim = c(box$y+box$h+brdr, box$y-brdr))
+  graphics::plot.window(xlim = c(box$x-brdr, box$x+box$w+brdr), ylim = c(box$y+box$h+brdr, box$y-brdr))
   graphics::rect(
     box$x-geometry$sideMargin, box$y-geometry$sideMargin, box$x+box$w+geometry$sideMargin, box$y+box$h+geometry$sideMargin,
     col = "#FFFFFF", border=NA)
   drawPan(pan)
   text(box$x + box$w/2, box$y-geometry$sideMargin/2, pan$name, adj = c(0.5, 0.5), cex=2, col="black")
-  dev.off()
+  grDevices::dev.off()
 }
 
 

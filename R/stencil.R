@@ -28,10 +28,10 @@ panel2stencil <- function(panels, pan, frameStyles, dpi) {
     height = round(geometry$size$h * pxPerCm),
     res = pxPerInch)
 
-  par(mar = c(0,0,0,0), xaxs = "i", xaxt="n", yaxs = "i", yaxt="n", bg="#FF0000")
-  plot.new()
+  graphics::par(mar = c(0,0,0,0), xaxs = "i", xaxt="n", yaxs = "i", yaxt="n", bg="#FF0000")
+  graphics::plot.new()
   brdr <- geometry$sideMargin + geometry$bleed
-  plot.window(xlim = c(box$x-brdr, box$x+box$w+brdr), ylim = c(box$y+box$h+brdr, box$y-brdr))
+  graphics::plot.window(xlim = c(box$x-brdr, box$x+box$w+brdr), ylim = c(box$y+box$h+brdr, box$y-brdr))
 
   panels <-
     panels |>
@@ -45,7 +45,7 @@ panel2stencil <- function(panels, pan, frameStyles, dpi) {
     for (j in seq_len(nrow(d))) {
       opts <- ConfigOpts::asOpts(d$frameOpts[[j]], "Frame")
       if (!opts$draw) next
-      lines(d$inner[[j]][,1], d$inner[[j]][,2], col = "#00FF00", lwd = opts$width, lty = opts$linetype)
+      graphics::lines(d$inner[[j]][,1], d$inner[[j]][,2], col = "#00FF00", lwd = opts$width, lty = opts$linetype)
     }
   }
   channels <- magick::image_separate(img)

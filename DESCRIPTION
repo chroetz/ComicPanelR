@@ -17,5 +17,7 @@ Imports:
     grDevices,
     magick,
     rlang,
+    stringr,
     tibble,
+    tidyr,
     wk

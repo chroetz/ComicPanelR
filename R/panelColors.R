@@ -12,7 +12,7 @@ getPanelColors <- function(n, alpha=0.3) {
       mode = "integer",
       inherits = FALSE)
     set.seed(0)
-    rgbValues <- matrix(runif(3 * delta), nrow = 3)
+    rgbValues <- matrix(stats::runif(3 * delta), nrow = 3)
     assign(".Random.seed", oldRandomSeed, globalenv())
     moreColors <- grDevices::rgb(
       red = rgbValues[1, ],
@@ -22,6 +22,6 @@ getPanelColors <- function(n, alpha=0.3) {
     moreColors <- character(0)
   }
   colors <- c(goodColors, moreColors)[seq_len(n)]
-  colors <- adjustcolor(colors, alpha.f = alpha)
+  colors <- grDevices::adjustcolor(colors, alpha.f = alpha)
   return(colors)
 }
