@@ -9,49 +9,227 @@ createStencils <- function(
   renderOpts <- ConfigOpts::readOpts(fileInRender, "Render")
 
   frameStyles <- getFrameStyles(renderOpts, pan)
-  stencil <- panel2stencil(panels, pan, frameStyles, dpi = renderOpts$dpi)
+  panel2stencil(panels, pan, frameStyles, dpi = renderOpts$dpi)
+  gc()
 
-  fileOutPng <- paste0(pan$name, "_stencil.png")
-  magick::image_write(stencil, path = fileOutPng, format = "png")
+  return(invisible())
 }
 
 # Convert Coordinates File to Image
 panel2stencil <- function(panels, pan, frameStyles, dpi) {
+
+  panelsAndFrames <-
+    panels |>
+    left_join(frameStyles, join_by(panelId, segmentId)) |>
+    arrange(panelId, sideId)
+  p <- nest(panelsAndFrames, data = c(segmentId, side, inner, sideId, frameOpts))
+
+  for (i in seq_len(nrow(p))) {
+    filePrefix <- sprintf("%s_%03d_", pan$name, i)
+    cat(filePrefix, "...", sep="")
+    createSinglePanelStencils(p$data[[i]], pan, dpi, filePrefix)
+    gc()
+  }
+
+  filePrefix <- sprintf("%s_", pan$name)
+  cat(filePrefix, "...", sep="")
+  createPageStencils(p, pan, dpi, filePrefix)
+  gc()
+
+  return(invisible())
+}
+
+createPageStencils <- function(p, pan, dpi, filePrefix) {
+
+  img <- setupDevice(pan, dpi)
+  grDevices::dev.off()
+  channels <- image_separate(img)
+  stencilEmpty <- channels[1]
+  rm(img);rm(channels);gc()
+
+  img <- setupDevice(pan, dpi)
+  for (i in seq_len(nrow(p))) {
+    d <- p$data[[i]]
+    path <- do.call(rbind, d$inner)
+    graphics::polygon(path[,1], path[,2], col = "#FFFFFF", border = NA)
+  }
+  grDevices::dev.off()
+  channels <- image_separate(img)
+  stencilPanel <- channels[1]
+  rm(img);rm(channels);gc()
+
+  img <- setupDevice(pan, dpi)
+  for (i in seq_len(nrow(p))) {
+    d <- p$data[[i]]
+    for (j in seq_len(nrow(d))) {
+      opts <- ConfigOpts::asOpts(d$frameOpts[[j]], "Frame")
+      if (!opts$draw) next
+      graphics::lines(d$inner[[j]][,1], d$inner[[j]][,2], col = "#FFFFFF", lwd = opts$width, lty = opts$linetype)
+    }
+  }
+  grDevices::dev.off()
+  channels <- image_separate(img)
+  stencilFrame <- channels[1]
+  rm(img);rm(channels);gc()
+
+  stencilUnframeedPanel <-
+    image_composite(
+      stencilPanel,
+      image_negate(stencilFrame),
+      operator = "Darken")
+
+  stencilNegative <-
+    image_composite(
+      image_composite(
+        image_negate(stencilEmpty),
+        image_negate(stencilFrame),
+        operator = "Darken"),
+      image_negate(stencilUnframeedPanel),
+      operator='copy-opacity'
+    )
+  rm(stencilUnframeedPanel);gc()
+
+  image_write(
+    stencilNegative,
+    path = sprintf("%sall_negative.png", filePrefix),
+    format = "png")
+  rm(stencilNegative);gc()
+
+
+  stencilPositive <-
+    image_composite(
+      image_negate(stencilEmpty),
+      stencilPanel,
+      operator='copy-opacity')
+
+  image_write(
+    stencilPositive,
+    path = sprintf("%sall_positive.png", filePrefix),
+    format = "png")
+  rm(stencilPositive);gc()
+
+
+  stencilBackgroundPos <-
+    image_composite(
+      image_negate(stencilEmpty),
+      image_negate(stencilPanel),
+      operator='copy-opacity')
+
+  image_write(
+    stencilBackgroundPos,
+    path = sprintf("%sbackground_positive.png", filePrefix),
+    format = "png")
+  rm(stencilBackgroundPos);gc()
+
+  stencilFrameedPanel <-
+    image_composite(
+      stencilPanel,
+      stencilFrame,
+      operator = "Lighten")
+
+  stencilBackgroundNeg <-
+    image_composite(
+      image_composite(
+        image_negate(stencilEmpty),
+        image_negate(stencilFrame),
+        operator = "Darken"),
+      stencilFrameedPanel,
+      operator='copy-opacity'
+    )
+  rm(stencilFrameedPanel);gc()
+
+  image_write(
+    stencilBackgroundNeg,
+    path = sprintf("%sbackground_negative.png", filePrefix),
+    format = "png")
+  rm(stencilBackgroundNeg);gc()
+
+  rm(list = ls());gc()
+  return(invisible())
+}
+
+createSinglePanelStencils <- function(d, pan, dpi, filePrefix) {
+
+  imgEmpty <- setupDevice(pan, dpi)
+  grDevices::dev.off()
+  channels <- image_separate(imgEmpty)
+  stencilEmpty <- channels[1]
+
+  img <- setupDevice(pan, dpi)
+  path <- do.call(rbind, d$inner)
+  graphics::polygon(path[,1], path[,2], col = "#FFFFFF", border = NA)
+  grDevices::dev.off()
+  channels <- image_separate(img)
+  stencilPanel <- channels[1]
+  rm(img);rm(channels);gc()
+
+  img <- setupDevice(pan, dpi)
+  for (j in seq_len(nrow(d))) {
+    opts <- ConfigOpts::asOpts(d$frameOpts[[j]], "Frame")
+    if (!opts$draw) next
+    graphics::lines(d$inner[[j]][,1], d$inner[[j]][,2], col = "#FFFFFF", lwd = opts$width, lty = opts$linetype)
+  }
+  grDevices::dev.off()
+  channels <- image_separate(img)
+  stencilFrame <- channels[1]
+  rm(img);rm(channels);gc()
+
+  stencilUnframeedPanel <-
+    image_composite(
+      stencilPanel,
+      image_negate(stencilFrame),
+      operator = "Darken")
+
+  stencilNegative <-
+    image_composite(
+      image_composite(
+        image_negate(stencilEmpty),
+        image_negate(stencilFrame),
+        operator = "Darken"),
+      image_negate(stencilUnframeedPanel),
+      operator='copy-opacity'
+    )
+  rm(stencilUnframeedPanel);gc()
+
+  image_write(
+    stencilNegative,
+    path = sprintf("%snegative.png", filePrefix),
+    format = "png")
+  rm(stencilNegative);gc()
+
+  stencilPositive <-
+    image_composite(
+      image_negate(stencilEmpty),
+      stencilPanel,
+      operator='copy-opacity')
+
+  image_write(
+    stencilPositive,
+    path = sprintf("%spositive.png", filePrefix),
+    format = "png")
+  rm(stencilPositive);gc()
+
+  rm(list = ls());gc()
+  return(invisible())
+}
+
+setupDevice <- function(pan, dpi) {
   geometry <- pan$geometry
   box <- makeBox(0, 0, geometry$size$w, geometry$size$h)
   cmPerInch <- 2.54
   pxPerInch <- dpi
   pxPerCm <- pxPerInch/cmPerInch
 
-  img <- magick::image_graph(
+  img <- image_graph(
     width = round(geometry$size$w * pxPerCm),
     height = round(geometry$size$h * pxPerCm),
-    res = pxPerInch)
+    res = pxPerInch,
+    bg = "#000000")
 
-  graphics::par(mar = c(0,0,0,0), xaxs = "i", xaxt="n", yaxs = "i", yaxt="n", bg="#FF0000")
+  graphics::par(mar = c(0,0,0,0), xaxs = "i", xaxt="n", yaxs = "i", yaxt="n", bg="#000000")
   graphics::plot.new()
   brdr <- geometry$sideMargin + geometry$bleed
   graphics::plot.window(xlim = c(box$x-brdr, box$x+box$w+brdr), ylim = c(box$y+box$h+brdr, box$y-brdr))
 
-  panels <-
-    panels |>
-    left_join(frameStyles, join_by(panelId, segmentId)) |>
-    arrange(panelId, sideId)
-  p <- nest(panels, data = c(segmentId, side, inner, sideId, frameOpts))
-  for (i in seq_len(nrow(p))) {
-    d <- p$data[[i]]
-    inner <- do.call(rbind, d$inner)
-    graphics::polygon(inner[,1], inner[,2], col = "#0000FF", border = NA)
-    for (j in seq_len(nrow(d))) {
-      opts <- ConfigOpts::asOpts(d$frameOpts[[j]], "Frame")
-      if (!opts$draw) next
-      graphics::lines(d$inner[[j]][,1], d$inner[[j]][,2], col = "#00FF00", lwd = opts$width, lty = opts$linetype)
-    }
-  }
-  channels <- magick::image_separate(img)
-  rgb <- magick::image_combine(c(channels[1], channels[1], channels[1]))
-  alpha <- magick::image_negate(channels[3])
-  res <- magick::image_composite(rgb, alpha, operator='copy-opacity')
-  return(res)
+  return(img)
 }
-

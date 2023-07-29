@@ -12,4 +12,6 @@ NULL
 #' @importFrom stringr str_extract
 #' @importFrom rlang .env .data
 #' @importFrom tibble tibble rowid_to_column
+#' @importFrom magick image_graph image_separate image_composite image_negate
+#'   image_combine image_write
 NULL
