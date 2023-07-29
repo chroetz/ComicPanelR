@@ -1,0 +1,6 @@
+{
+    "_class": ["Layout", "Page", "Opts"],
+    "panelArea": {
+        "_class": ["Layout", "Opts"]
+    }
+}

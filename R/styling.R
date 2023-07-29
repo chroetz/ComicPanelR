@@ -1,4 +1,25 @@
+#' @export
+createPanelsWithEffects <- function(fileInPan, fileInPanels, fileInEffects, fileOutPng, fileOutRds) {
+  pan <- readRDS(fileInPan)
+  panels <- readRDS(fileInPanels)
+
+  effectList <- ConfigOpts::readOpts(fileInEffects, c("Effect", "List"))
+  decoratedPanels <- applyEffectsToPanels(panels, effectList, pan)
+
+  renderPanels(
+    decoratedPanels,
+    pan,
+    fileOutPng,
+    drawBorder=FALSE,
+    drawSegText=FALSE,
+    drawPanelText=FALSE)
+
+  saveRDS(decoratedPanels, fileOutRds)
+}
+
+
 applyEffectsToPanels <- function(panels, effects, pan) {
+  browser()
   for (effect in effects) {
     panels <- applyEffectToPanels(panels, effect, pan)
   }
@@ -9,22 +30,25 @@ applyEffectToPanels <- function(panels, effect, pan) {
   panel <-
     panels |>
     filter(panelId == effect$panelId)
-  panel <- applyEffectToPath(panel, effect, pan)
-  panels <-
+  otherPanels <-
     panels |>
-    anti_join(panel, by = join_by(panelId, segmentId)) |>
+    anti_join(panel, by = join_by(panelId, segmentId))
+  panel <- applyEffectToPanel(panel, effect, pan)
+  outPanels <-
+    otherPanels |>
     bind_rows(panel) |>
     arrange(panelId, sideId)
-  return(panels)
+  return(outPanels)
 }
 
-applyEffectToPath <- function(panel, effect, pan) {
+applyEffectToPanel <- function(panel, effect, pan) {
   className <- ConfigOpts::getClassAt(effect, 2)
   panel <- switch(
     className,
     "ToPageEnd" = effectToPageEnd(panel, effect, pan),
     "Adjust" = effectAdjust(panel, effect, pan),
     "Deco" = effectDeco(panel, effect, pan),
+    "Remove" = NULL,
     stop(paste0("Unknown Effect ", className))
   )
   return(panel)

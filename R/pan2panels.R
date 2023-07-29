@@ -1,3 +1,4 @@
+#' @export
 createPanels <- function(fileInPan, fileInMargin, fileOutPng, fileOutRds) {
   pan <- readRDS(fileInPan)
   marginOpts <- ConfigOpts::readOpts(fileInMargin)
@@ -139,6 +140,7 @@ renderPanels <- function(panels, pan, fileOut, dpi=300, drawBorder=TRUE, drawSeg
     box$x-geometry$sideMargin, box$y-geometry$sideMargin, box$x+box$w+geometry$sideMargin, box$y+box$h+geometry$sideMargin,
     col = "#FFFFFF", border=NA)
   drawPanels(panels, pan, drawBorder, drawSegText, drawPanelText)
+  text(box$x + box$w/2, box$y-geometry$sideMargin/2, pan$name, adj = c(0.5, 0.5), cex=2, col="black")
   dev.off()
 }
 
@@ -147,7 +149,7 @@ drawPanels <- function(panels, pan, drawBorder, drawSegText, drawPanelText) {
   panels <-
     panels |>
     arrange(panelId, sideId)
-  colors <- sample(grDevices::rainbow(nrow(panels), alpha=0.3))
+  colors <- getPanelColors(nrow(panels))
   p <- nest(panels, data = c(segmentId, side, inner, sideId))
   for (i in seq_len(nrow(p))) {
     d <- p$data[[i]]

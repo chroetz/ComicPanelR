@@ -1,3 +1,4 @@
+#' @export
 createTransformedParti <- function(fileInParti, fileInTransform, fileOutPng, fileOutJson) {
   parti <- ConfigOpts::readOpts(fileInParti)
   transformOpts <- ConfigOpts::readOpts(fileInTransform, c("Transform", "List"))

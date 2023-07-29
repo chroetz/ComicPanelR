@@ -1,5 +1,6 @@
 {
     "_class": ["Parti", "Opts"],
+    "name": "PAGENAME",
     "geometry": {
         "_class": ["Geometry", "Opts"]
     },

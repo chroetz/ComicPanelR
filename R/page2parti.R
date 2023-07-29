@@ -1,4 +1,65 @@
+#' @export
+createBaseParti <- function(fileInPage, fileOutPng, fileOutJson) {
+  page <- ConfigOpts::readOpts(fileInPage, "Page")
+  parti <- page2parti(page)
+  renderParti(parti, fileOutPng)
+  ConfigOpts::writeOpts(parti, fileOutJson)
+}
+
+
 page2parti <- function(page) {
+  page <- ConfigOpts::asOpts(page, "Page")
+  className <- ConfigOpts::getClassAt(page, 2)
+  parti <- switch(
+    className,
+    "Rowwise" = partiFromRowwisePage(page),
+    "Layout" = partiFromLayoutPage(page),
+    stop(paste0("Unknown Page Class ", className))
+  )
+  return(parti)
+}
+
+partiFromRowwisePage <- function(page) {
+  page <- ConfigOpts::asOpts(page, c("Rowwise", "Page"))
+  rows <- page$rows
+  if (is.matrix(rows)) rows <- apply(rows, 1, force, simplify=FALSE)
+  layoutPage <- ConfigOpts::makeOpts(
+    c("Layout", "Page"),
+    name = page$name,
+    geometry = page$geometry,
+    panelArea = ConfigOpts::makeOpts(
+      c("Column", "Layout"),
+      weights = page$rowWeights,
+      elements = ConfigOpts::makeOpts(
+        c("Layout", "List"),
+        list = lapply(
+          rows,
+          \(wei) {
+            ConfigOpts::makeOpts(
+              c("Row", "Layout"),
+              weights = wei,
+              elements = ConfigOpts::makeOpts(
+                c("Layout", "List"),
+                list = lapply(
+                  wei,
+                  \(w) {
+                    ConfigOpts::makeOpts(c("Panel", "Layout"))
+                  }
+                )
+              )
+            )
+          }
+        )
+      )
+    )
+  )
+
+  parti <- partiFromLayoutPage(layoutPage)
+  return(parti)
+}
+
+partiFromLayoutPage <- function(page) {
+  page <- ConfigOpts::asOpts(page, c("Layout", "Page"))
   box <- makeBox(0, 0, page$geometry$size$w, page$geometry$size$h)
   layout <- page$panelArea
   coorPanels <- getLayoutPanels(layout, box)
@@ -10,17 +71,11 @@ page2parti <- function(page) {
   names(polygonIdPanels) <- paste0("P", seq_along(polygonIdPanels))
   parti <- ConfigOpts::makeOpts(
     "Parti",
+    name = page$name,
     geometry = page$geometry,
     vertices = vertices,
     idPanels = polygonIdPanels)
   return(parti)
-}
-
-createBaseParti <- function(fileInPage, fileOutPng, fileOutJson) {
-  page <- ConfigOpts::readOpts(fileInPage, "Page")
-  parti <- page2parti(page)
-  renderParti(parti, fileOutPng)
-  ConfigOpts::writeOpts(parti, fileOutJson)
 }
 
 
@@ -112,7 +167,7 @@ coorPanels2Id <- function(panels) {
 
 drawPartiPolygons <- function(parti, box) {
 
-  colors <- sample(grDevices::rainbow(length(parti$idPanels), alpha=0.3))
+  colors <- getPanelColors(length(parti$idPanels))
   for (i in seq_along(parti$idPanels)) {
     p <- parti$idPanels[[i]]
     coors <- parti$vertices[p, ]
@@ -155,5 +210,6 @@ renderParti <- function(parti, fileOut, dpi = 300) {
     box$x-geometry$sideMargin, box$y-geometry$sideMargin, box$x+box$w+geometry$sideMargin, box$y+box$h+geometry$sideMargin,
     col = "#FFFFFF", border=NA)
   drawPartiPolygons(parti)
+  text(box$x + box$w/2, box$y-geometry$sideMargin/2, parti$name, adj = c(0.5, 0.5), cex=2, col="black")
   dev.off()
 }

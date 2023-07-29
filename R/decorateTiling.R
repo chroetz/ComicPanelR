@@ -1,3 +1,4 @@
+#' @export
 createDecoratedPan <- function(fileInParti, fileInDeco, fileOutPng, fileOutRds) {
   parti <- ConfigOpts::readOpts(fileInParti, "Parti")
   decoOpts <- ConfigOpts::readOpts(fileInDeco, c("Deco", "List"))
@@ -93,6 +94,7 @@ renderPan <- function(pan, fileOut, dpi = 300) {
     box$x-geometry$sideMargin, box$y-geometry$sideMargin, box$x+box$w+geometry$sideMargin, box$y+box$h+geometry$sideMargin,
     col = "#FFFFFF", border=NA)
   drawPan(pan)
+  text(box$x + box$w/2, box$y-geometry$sideMargin/2, pan$name, adj = c(0.5, 0.5), cex=2, col="black")
   dev.off()
 }
 
@@ -101,7 +103,7 @@ drawPan <- function(pan) {
 
   n <- length(pan$idPanels)
 
-  colors <- sample(grDevices::rainbow(n, alpha=0.3))
+  colors <- getPanelColors(n)
   for (i in seq_len(n)) {
     vertexIds <- pan$idPanels[[i]]
     idSegments <- cbind(vertexIds, c(vertexIds[-1], vertexIds[1]))

@@ -1,8 +1,6 @@
 {
     "_class": ["Page", "Opts"],
-    "panelArea": {
-        "_class": ["Layout", "Opts"]
-    },
+    "name": "PAGENAME",
     "geometry": {
         "_class": ["Geometry", "Opts"]
     }
