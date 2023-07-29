@@ -144,6 +144,30 @@ createPageStencils <- function(p, pan, dpi, filePrefix) {
     format = "png")
   rm(stencilBackgroundNeg);gc()
 
+  stencilFramePos <-
+    image_composite(
+      image_negate(stencilEmpty),
+      image_negate(stencilFrame),
+      operator='copy-opacity')
+
+  image_write(
+    stencilFramePos,
+    path = sprintf("%sframe_positive.png", filePrefix),
+    format = "png")
+  rm(stencilFramePos);gc()
+
+  stencilFrameNeg <-
+    image_composite(
+      image_negate(stencilEmpty),
+      stencilFrame,
+      operator='copy-opacity')
+
+  image_write(
+    stencilFrameNeg,
+    path = sprintf("%sframe_negative.png", filePrefix),
+    format = "png")
+  rm(stencilFrameNeg);gc()
+
   rm(list = ls());gc()
   return(invisible())
 }
