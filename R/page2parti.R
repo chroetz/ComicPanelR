@@ -1,9 +1,13 @@
 #' @export
-createBaseParti <- function(fileInPage, fileOutPng, fileOutJson) {
+createBaseParti <- function(
+    fileInPage = "opt_01_page.json",
+    fileOutPng = "preview_01_parti.png",
+    fileOutRds = "store_01_parti.RDS"
+) {
   page <- ConfigOpts::readOpts(fileInPage, "Page")
   parti <- page2parti(page)
   renderParti(parti, fileOutPng)
-  ConfigOpts::writeOpts(parti, fileOutJson)
+  saveRDS(parti, fileOutRds)
 }
 
 

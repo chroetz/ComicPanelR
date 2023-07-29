@@ -1,10 +1,15 @@
 #' @export
-createPanels <- function(fileInPan, fileInMargin, fileOutPng, fileOutRds) {
+createPanels <- function(
+    fileInPan = "store_03_pan.RDS",
+    fileInMargin = "opt_04_margin.json",
+    fileOutPng = "preview_04_panels.png",
+    fileOutRds = "store_04_panels.RDS"
+) {
   pan <- readRDS(fileInPan)
   marginOpts <- ConfigOpts::readOpts(fileInMargin)
   panels <- makePanels(pan, marginOpts)
   renderPanels(panels, pan, fileOutPng)
-  saveRDS(panels, fileOutRds)
+  saveRDS(list(panels = panels, pan = pan), fileOutRds)
 }
 
 makePanels <- function(pan, marginOpts) {
@@ -45,24 +50,34 @@ pan2panels <- function(pan) {
 
 getMargins <- function(pan, opts) {
   opts <- ConfigOpts::asOpts(opts, "Margin")
-  panelMargin <-
-    tibble(id = names(opts$panels), panelMargin = unlist(opts$panels)) |>
-    mutate(panelId = as.integer(str_extract(id, "[0-9]+", ))) |>
-    select(panelId, panelMargin)
-  sideMargin <-
-    tibble(id = names(opts$sides), sideMargin = unlist(opts$sides)) |>
-    mutate(
-      panelId = as.integer(str_extract(id, "(?<=[pP])[0-9]+")),
-      segmentId = as.integer(str_extract(id, "(?<=[sS])[0-9]+"))) |>
-    select(panelId, segmentId, sideMargin)
   margins <-
     pan$idGraph |>
     select(panelId, segmentId) |>
-    mutate(margin = opts$default) |>
-    left_join(panelMargin, by="panelId") |>
-    mutate(margin = ifelse(is.na(panelMargin), margin, panelMargin)) |>
-    left_join(sideMargin, by=c("panelId", "segmentId")) |>
-    mutate(margin = ifelse(is.na(sideMargin), margin, sideMargin)) |>
+    mutate(margin = opts$default)
+  if (length(opts$panels) > 0) {
+    panelMargin <-
+      tibble(id = names(opts$panels), panelMargin = unlist(opts$panels)) |>
+      mutate(panelId = as.integer(str_extract(id, "[0-9]+", ))) |>
+      select(panelId, panelMargin)
+    margins <-
+      margins |>
+      left_join(panelMargin, by="panelId") |>
+      mutate(margin = ifelse(is.na(panelMargin), margin, panelMargin))
+  }
+  if (length(opts$sides) > 0) {
+    sideMargin <-
+      tibble(id = names(opts$sides), sideMargin = unlist(opts$sides)) |>
+      mutate(
+        panelId = as.integer(str_extract(id, "(?<=[pP])[0-9]+")),
+        segmentId = as.integer(str_extract(id, "(?<=[sS])[0-9]+"))) |>
+      select(panelId, segmentId, sideMargin)
+    margins <-
+      margins |>
+      left_join(sideMargin, by=c("panelId", "segmentId")) |>
+      mutate(margin = ifelse(is.na(sideMargin), margin, sideMargin))
+  }
+  margins <-
+    margins |>
     select(panelId, segmentId, margin)
   return(margins)
 }

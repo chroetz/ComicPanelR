@@ -1,10 +1,16 @@
 #' @export
-createPanelsWithEffects <- function(fileInPan, fileInPanels, fileInEffects, fileOutPng, fileOutRds) {
-  pan <- readRDS(fileInPan)
-  panels <- readRDS(fileInPanels)
+createPanelsWithEffects <- function(
+    fileInPanelsAndPan = "store_04_panels.RDS",
+    fileInEffects = "opt_05_effect.json",
+    fileOutPng = "preview_05_panels-effect.png",
+    fileOutRds = "store_05_panels-effect.RDS"
+) {
+  panelsAndPan <- readRDS(fileInPanelsAndPan)
+  pan <- panelsAndPan$pan
+  panels <- panelsAndPan$panels
 
   effectList <- ConfigOpts::readOpts(fileInEffects, c("Effect", "List"))
-  decoratedPanels <- applyEffectsToPanels(panels, effectList, pan)
+  decoratedPanels <- applyEffectsToPanels(panels, effectList$list, pan)
 
   renderPanels(
     decoratedPanels,
@@ -14,7 +20,7 @@ createPanelsWithEffects <- function(fileInPan, fileInPanels, fileInEffects, file
     drawSegText=FALSE,
     drawPanelText=FALSE)
 
-  saveRDS(decoratedPanels, fileOutRds)
+  saveRDS(list(panels = decoratedPanels, pan = pan), fileOutRds)
 }
 
 

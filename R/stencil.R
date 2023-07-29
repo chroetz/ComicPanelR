@@ -1,17 +1,17 @@
 #' @export
-createStecil <- function(
-    fileInPan,
-    fileInPanels,
-    fileInRender,
-    fileOutPng
+createStencils <- function(
+    fileInPanelsAndPan = "store_05_panels-effect.RDS",
+    fileInRender = "opt_06_render.json"
 ) {
-  pan <- readRDS(fileInPan)
-  panels <- readRDS(fileInPanels)
+  panelsAndPan <- readRDS(fileInPanelsAndPan)
+  pan <- panelsAndPan$pan
+  panels <- panelsAndPan$panels
   renderOpts <- ConfigOpts::readOpts(fileInRender, "Render")
 
   frameStyles <- getFrameStyles(renderOpts, pan)
-
   stencil <- panel2stencil(panels, pan, frameStyles, dpi = renderOpts$dpi)
+
+  fileOutPng <- paste0(pan$name, "_stencil.png")
   magick::image_write(stencil, path = fileOutPng, format = "png")
 }
 

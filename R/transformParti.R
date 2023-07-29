@@ -1,10 +1,15 @@
 #' @export
-createTransformedParti <- function(fileInParti, fileInTransform, fileOutPng, fileOutJson) {
-  parti <- ConfigOpts::readOpts(fileInParti)
+createTransformedParti <- function(
+    fileInParti = "store_01_parti.RDS",
+    fileInTransform = "opt_02_transform.json",
+    fileOutPng = "preview_02_parti-tr.png",
+    fileOutRds = "store_02_parti-tr.RDS"
+) {
+  parti <- readRDS(fileInParti)
   transformOpts <- ConfigOpts::readOpts(fileInTransform, c("Transform", "List"))
   parti <- transformParti(parti, transformOpts$list)
   renderParti(parti, fileOutPng)
-  ConfigOpts::writeOpts(parti, fileOutJson)
+  saveRDS(parti, fileOutRds)
 }
 
 

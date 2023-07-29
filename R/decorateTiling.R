@@ -1,6 +1,11 @@
 #' @export
-createDecoratedPan <- function(fileInParti, fileInDeco, fileOutPng, fileOutRds) {
-  parti <- ConfigOpts::readOpts(fileInParti, "Parti")
+createDecoratedPan <- function(
+    fileInParti = "store_02_parti-tr.RDS",
+    fileInDeco = "opt_03_deco.json",
+    fileOutPng = "preview_03_pan.png",
+    fileOutRds = "store_03_pan.RDS"
+) {
+  parti <- readRDS(fileInParti)
   decoOpts <- ConfigOpts::readOpts(fileInDeco, c("Deco", "List"))
   pan <- parti2pan(parti)
   for (deco in decoOpts$list) {
@@ -94,7 +99,7 @@ renderPan <- function(pan, fileOut, dpi = 300) {
     box$x-geometry$sideMargin, box$y-geometry$sideMargin, box$x+box$w+geometry$sideMargin, box$y+box$h+geometry$sideMargin,
     col = "#FFFFFF", border=NA)
   drawPan(pan)
-  text(box$x + box$w/2, box$y-geometry$sideMargin/2, pan$name, adj = c(0.5, 0.5), cex=2, col="black")
+  graphics::text(box$x + box$w/2, box$y-geometry$sideMargin/2, pan$name, adj = c(0.5, 0.5), cex=2, col="black")
   grDevices::dev.off()
 }
 
