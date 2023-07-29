@@ -149,8 +149,8 @@ drawPanels <- function(panels, pan, drawBorder, drawSegText, drawPanelText) {
   panels <-
     panels |>
     arrange(panelId, sideId)
-  colors <- getPanelColors(nrow(panels))
   p <- nest(panels, data = c(segmentId, side, inner, sideId))
+  colors <- getPanelColors(nrow(p))
   for (i in seq_len(nrow(p))) {
     d <- p$data[[i]]
     inner <- do.call(rbind, d$inner)

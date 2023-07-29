@@ -19,7 +19,6 @@ createPanelsWithEffects <- function(fileInPan, fileInPanels, fileInEffects, file
 
 
 applyEffectsToPanels <- function(panels, effects, pan) {
-  browser()
   for (effect in effects) {
     panels <- applyEffectToPanels(panels, effect, pan)
   }
