@@ -23,8 +23,9 @@ panel2stencil <- function(panels, pan, frameStyles, dpi) {
     left_join(frameStyles, join_by(panelId, segmentId)) |>
     arrange(panelId, sideId)
   p <- nest(panelsAndFrames, data = c(segmentId, side, inner, sideId, frameOpts))
+  n <- nrow(p)
 
-  for (i in seq_len(nrow(p))) {
+  for (i in seq_len(n)) {
     filePrefix <- sprintf("%s_%03d_", pan$name, i)
     cat(filePrefix, "...", sep="")
     createSinglePanelStencils(p$data[[i]], pan, dpi, filePrefix)
@@ -35,6 +36,15 @@ panel2stencil <- function(panels, pan, frameStyles, dpi) {
   cat(filePrefix, "...", sep="")
   createPageStencils(p, pan, dpi, filePrefix)
   gc()
+
+  createBlank("#FFFFFFFF", pan, dpi, sprintf("%s_gutter_image.png", pan$name))
+  createBlank("#000000FF", pan, dpi, sprintf("%s_frame_image.png", pan$name))
+  createBlank("#00000000", pan, dpi, sprintf("%s_abovegutter_image.png", pan$name))
+  createBlank("#00000000", pan, dpi, sprintf("%s_belowgutter_image.png", pan$name))
+  colors <- getPanelColors(n, alpha=1)
+  for (i in seq_len(n)) {
+    createBlank(colors[i], pan, dpi, sprintf("%s_%03d_image.png", pan$name, i))
+  }
 
   return(invisible())
 }
@@ -72,54 +82,54 @@ createPageStencils <- function(p, pan, dpi, filePrefix) {
   stencilFrame <- channels[1]
   rm(img);rm(channels);gc()
 
-  stencilUnframeedPanel <-
-    image_composite(
-      stencilPanel,
-      image_negate(stencilFrame),
-      operator = "Darken")
+  # stencilUnframeedPanel <-
+  #   image_composite(
+  #     stencilPanel,
+  #     image_negate(stencilFrame),
+  #     operator = "Darken")
+  #
+  # stencilNegative <-
+  #   image_composite(
+  #     image_composite(
+  #       image_negate(stencilEmpty),
+  #       image_negate(stencilFrame),
+  #       operator = "Darken"),
+  #     image_negate(stencilUnframeedPanel),
+  #     operator='copy-opacity'
+  #   )
+  # rm(stencilUnframeedPanel);gc()
+  #
+  # image_write(
+  #   stencilNegative,
+  #   path = sprintf("%sall_negative.png", filePrefix),
+  #   format = "png")
+  # rm(stencilNegative);gc()
+  #
+  #
+  # stencilPositive <-
+  #   image_composite(
+  #     image_negate(stencilEmpty),
+  #     stencilPanel,
+  #     operator='copy-opacity')
+  #
+  # image_write(
+  #   stencilPositive,
+  #   path = sprintf("%sall_positive.png", filePrefix),
+  #   format = "png")
+  # rm(stencilPositive);gc()
 
-  stencilNegative <-
-    image_composite(
-      image_composite(
-        image_negate(stencilEmpty),
-        image_negate(stencilFrame),
-        operator = "Darken"),
-      image_negate(stencilUnframeedPanel),
-      operator='copy-opacity'
-    )
-  rm(stencilUnframeedPanel);gc()
 
-  image_write(
-    stencilNegative,
-    path = sprintf("%sall_negative.png", filePrefix),
-    format = "png")
-  rm(stencilNegative);gc()
-
-
-  stencilPositive <-
-    image_composite(
-      image_negate(stencilEmpty),
-      stencilPanel,
-      operator='copy-opacity')
-
-  image_write(
-    stencilPositive,
-    path = sprintf("%sall_positive.png", filePrefix),
-    format = "png")
-  rm(stencilPositive);gc()
-
-
-  stencilBackgroundPos <-
+  stencilGutterPos <-
     image_composite(
       image_negate(stencilEmpty),
       image_negate(stencilPanel),
       operator='copy-opacity')
 
   image_write(
-    stencilBackgroundPos,
-    path = sprintf("%sbackground_positive.png", filePrefix),
+    stencilGutterPos,
+    path = sprintf("%sgutter_positive.png", filePrefix),
     format = "png")
-  rm(stencilBackgroundPos);gc()
+  rm(stencilGutterPos);gc()
 
   stencilFrameedPanel <-
     image_composite(
@@ -127,7 +137,7 @@ createPageStencils <- function(p, pan, dpi, filePrefix) {
       stencilFrame,
       operator = "Lighten")
 
-  stencilBackgroundNeg <-
+  stencilGutterNeg <-
     image_composite(
       image_composite(
         image_negate(stencilEmpty),
@@ -139,27 +149,15 @@ createPageStencils <- function(p, pan, dpi, filePrefix) {
   rm(stencilFrameedPanel);gc()
 
   image_write(
-    stencilBackgroundNeg,
-    path = sprintf("%sbackground_negative.png", filePrefix),
+    stencilGutterNeg,
+    path = sprintf("%sgutter_negative.png", filePrefix),
     format = "png")
-  rm(stencilBackgroundNeg);gc()
-
-  stencilFramePos <-
-    image_composite(
-      image_negate(stencilEmpty),
-      image_negate(stencilFrame),
-      operator='copy-opacity')
-
-  image_write(
-    stencilFramePos,
-    path = sprintf("%sframe_positive.png", filePrefix),
-    format = "png")
-  rm(stencilFramePos);gc()
+  rm(stencilGutterNeg);gc()
 
   stencilFrameNeg <-
     image_composite(
       image_negate(stencilEmpty),
-      stencilFrame,
+      image_negate(stencilFrame),
       operator='copy-opacity')
 
   image_write(
@@ -167,6 +165,18 @@ createPageStencils <- function(p, pan, dpi, filePrefix) {
     path = sprintf("%sframe_negative.png", filePrefix),
     format = "png")
   rm(stencilFrameNeg);gc()
+
+  stencilFramePos <-
+    image_composite(
+      image_negate(stencilEmpty),
+      stencilFrame,
+      operator='copy-opacity')
+
+  image_write(
+    stencilFramePos,
+    path = sprintf("%sframe_positive.png", filePrefix),
+    format = "png")
+  rm(stencilFramePos);gc()
 
   rm(list = ls());gc()
   return(invisible())
@@ -256,4 +266,29 @@ setupDevice <- function(pan, dpi) {
   graphics::plot.window(xlim = c(box$x-brdr, box$x+box$w+brdr), ylim = c(box$y+box$h+brdr, box$y-brdr))
 
   return(img)
+}
+
+createBlank <- function(color, pan, dpi, fileName, overwrite=FALSE) {
+  if (file.exists(fileName)) {
+    if (!overwrite) {
+      cat(" - not overwriting", fileName, "- ")
+      return()
+    }
+  }
+
+  geometry <- pan$geometry
+  cmPerInch <- 2.54
+  pxPerInch <- dpi
+  pxPerCm <- pxPerInch/cmPerInch
+
+  grDevices::png(
+    fileName,
+    width = round(geometry$size$w * pxPerCm),
+    height = round(geometry$size$h * pxPerCm),
+    bg = color,
+    res = dpi)
+
+  graphics::plot.new()
+
+  grDevices::dev.off()
 }
