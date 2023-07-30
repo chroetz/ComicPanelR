@@ -330,22 +330,3 @@ createBlank <- function(color, pan, dpi, fileName, overwrite=FALSE) {
   writeMagickImage(img, fileName)
   rm(img);gc()
 }
-
-
-writeMagickImage <- function(img, fileName) {
-  img <- image_convert(
-    img,
-    format = "tiff",
-    type = "ColorSeparationAlpha",
-    colorspace = "cmyk",
-    depth = 8,
-    antialias = TRUE,
-    matte = TRUE)
-  image_write(
-    img,
-    path = fileName,
-    format = "tiff",
-    compression = "Zip")
-  rm(img);gc()
-  return(invisible())
-}
