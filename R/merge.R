@@ -1,69 +1,85 @@
 #' @export
-createMerged <- function(path = ".") {
-  suffix <- "_gutter_image.png"
-  name <-
-    dir(
-      path = path,
-      pattern = paste0(suffix, "$")
-    ) |>
-    str_sub(end = -(nchar(suffix)+1))
-  stopifnot(length(name) == 1)
-  merge(name)
+createMerged <- function() {
+  mergeInfo <- jsonlite::read_json("mergeinfo.json")
+  merge(mergeInfo)
 }
 
-merge <- function(name) {
-  panelImages <- dir(pattern=paste0(name,"_[0-9]+_image\\.png$")) |> sort()
-  panelPositives <- dir(pattern=paste0(name,"_[0-9]+_positive\\.png$")) |> sort()
-  stopifnot(length(panelImages) == length(panelPositives))
-  n <- length(panelImages)
 
-  page <- image_read(paste0(name,"_gutter_image.png"))
+merge <- function(info) {
 
-  for (i in seq_len(n)) {
-    positive <- image_read(panelPositives[i])
-    image <- image_read(panelImages[i])
+  page <- image_graph(
+    width = info$width,
+    height = info$height,
+    res = info$dpi,
+    bg = "#FFFFFF")
+  graphics::par(mar = c(0,0,0,0), xaxs = "i", xaxt="n", yaxs = "i", yaxt="n", bg="#FFFFFF")
+  graphics::plot.new()
+  grDevices::dev.off()
+  page <- image_convert(
+    page,
+    format = "tiff",
+    type = "ColorSeparationAlpha",
+    colorspace = "cmyk",
+    depth = 8,
+    antialias = TRUE,
+    matte = TRUE)
+
+  for (nf in info$panels) {
+    positive <- image_read(nf$positive)
+    image <- image_read(nf$image)
     panel <- image_composite(
       image,
       positive,
       operator = "CopyOpacity")
+    rm(positive,image);gc()
     page <- image_composite(
         page,
         panel,
         operator="over")
+    rm(panel);gc()
   }
 
   page <- image_composite(
     page,
-    image_read(paste0(name,"_belowgutter_image.png")),
+    image_read(info$belowGutter),
     operator="over")
+  gc()
 
-  positive <- image_read(paste0(name,"_gutter_positive.png"))
-  image <- image_read(paste0(name,"_gutter_image.png"))
+  positive <- image_read(info$gutter$positive)
+  image <- image_read(info$gutter$image)
   gutter <- image_composite(
     image,
     positive,
     operator = "CopyOpacity")
+  rm(positive,image);gc()
 
   page <- image_composite(
     page,
     gutter,
     operator="over")
+  rm(gutter);gc()
 
-  positive <- image_read(paste0(name,"_frame_positive.png"))
-  image <- image_read(paste0(name,"_frame_image.png"))
+  positive <- image_read(info$frame$positive)
+  image <- image_read(info$frame$image)
   frame <- image_composite(
     image,
     positive,
     operator = "CopyOpacity")
+  rm(positive,image);gc()
   page <- image_composite(
     page,
     frame,
     operator="over")
+  rm(frame);gc()
 
   page <- image_composite(
     page,
-    image_read(paste0(name,"_abovegutter_image.png")),
+    image_read(info$aboveGutter),
     operator="over")
+  gc()
 
-  image_write(page, paste0(name,".png"), format="png")
+  writeMagickImage(page, info$out)
+  rm(page);gc()
+
+  return(invisible())
 }

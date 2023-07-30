@@ -37,14 +37,59 @@ panel2stencil <- function(panels, pan, frameStyles, dpi) {
   createPageStencils(p, pan, dpi, filePrefix)
   gc()
 
-  createBlank("#FFFFFFFF", pan, dpi, sprintf("%s_gutter_image.png", pan$name))
-  createBlank("#000000FF", pan, dpi, sprintf("%s_frame_image.png", pan$name))
-  createBlank("#00000000", pan, dpi, sprintf("%s_abovegutter_image.png", pan$name))
-  createBlank("#00000000", pan, dpi, sprintf("%s_belowgutter_image.png", pan$name))
+  createBlank("#FFFFFFFF", pan, dpi, sprintf("%s_gutter_image.tiff", pan$name))
+  createBlank("#000000FF", pan, dpi, sprintf("%s_frame_image.tiff", pan$name))
+  createBlank("#00000000", pan, dpi, sprintf("%s_abovegutter_image.tiff", pan$name))
+  createBlank("#00000000", pan, dpi, sprintf("%s_belowgutter_image.tiff", pan$name))
   colors <- getPanelColors(n, alpha=1)
   for (i in seq_len(n)) {
-    createBlank(colors[i], pan, dpi, sprintf("%s_%03d_image.png", pan$name, i))
+    createBlank(colors[i], pan, dpi, sprintf("%s_%03d_image.tiff", pan$name, i))
   }
+
+  createMergeInfo(panels, pan, dpi)
+
+  return(invisible())
+}
+
+createMergeInfo <- function(panels, pan, dpi) {
+  geometry <- pan$geometry
+  cmPerInch <- 2.54
+  pxPerInch <- dpi
+  pxPerCm <- pxPerInch/cmPerInch
+  n <- panels$panelId |> unique() |> length()
+
+  info <- list(
+    name = pan$name,
+    dpi = dpi,
+    width = round(geometry$size$w * pxPerCm),
+    height = round(geometry$size$h * pxPerCm),
+    panels = lapply(
+      1:n,
+      \(i) {
+        list(
+          image = sprintf("%s_%03d_image.tiff", pan$name, i),
+          positive = sprintf("%s_%03d_positive.tiff", pan$name, i),
+          negative = sprintf("%s_%03d_negative.tiff", pan$name, i)
+        )
+      }),
+    aboveGutter = sprintf("%s_abovegutter_image.tiff", pan$name),
+    belowGutter = sprintf("%s_belowgutter_image.tiff", pan$name),
+    gutter = list(
+      image = sprintf("%s_gutter_image.tiff", pan$name),
+      positive = sprintf("%s_gutter_positive.tiff", pan$name),
+      negative = sprintf("%s_gutter_negative.tiff", pan$name)),
+    frame = list(
+      image = sprintf("%s_frame_image.tiff", pan$name),
+      positive = sprintf("%s_frame_positive.tiff", pan$name),
+      negative = sprintf("%s_frame_negative.tiff", pan$name)),
+    out = sprintf("%s.tiff", pan$name)
+  )
+
+  jsonlite::write_json(
+    info,
+    "mergeinfo.json",
+    auto_unbox = TRUE,
+    pretty = TRUE)
 
   return(invisible())
 }
@@ -99,10 +144,9 @@ createPageStencils <- function(p, pan, dpi, filePrefix) {
     )
   rm(stencilUnframeedPanel);gc()
 
-  image_write(
+  writeMagickImage(
     stencilNegative,
-    path = sprintf("%sall_negative.png", filePrefix),
-    format = "png")
+    sprintf("%sall_negative.tiff", filePrefix))
   rm(stencilNegative);gc()
 
 
@@ -112,10 +156,9 @@ createPageStencils <- function(p, pan, dpi, filePrefix) {
       stencilPanel,
       operator='copy-opacity')
 
-  image_write(
+  writeMagickImage(
     stencilPositive,
-    path = sprintf("%sall_positive.png", filePrefix),
-    format = "png")
+    sprintf("%sall_positive.tiff", filePrefix))
   rm(stencilPositive);gc()
 
 
@@ -125,10 +168,9 @@ createPageStencils <- function(p, pan, dpi, filePrefix) {
       image_negate(stencilPanel),
       operator='copy-opacity')
 
-  image_write(
+  writeMagickImage(
     stencilGutterPos,
-    path = sprintf("%sgutter_positive.png", filePrefix),
-    format = "png")
+    sprintf("%sgutter_positive.tiff", filePrefix))
   rm(stencilGutterPos);gc()
 
   stencilFrameedPanel <-
@@ -148,10 +190,9 @@ createPageStencils <- function(p, pan, dpi, filePrefix) {
     )
   rm(stencilFrameedPanel);gc()
 
-  image_write(
+  writeMagickImage(
     stencilGutterNeg,
-    path = sprintf("%sgutter_negative.png", filePrefix),
-    format = "png")
+    sprintf("%sgutter_negative.tiff", filePrefix))
   rm(stencilGutterNeg);gc()
 
   stencilFrameNeg <-
@@ -160,10 +201,9 @@ createPageStencils <- function(p, pan, dpi, filePrefix) {
       image_negate(stencilFrame),
       operator='copy-opacity')
 
-  image_write(
+  writeMagickImage(
     stencilFrameNeg,
-    path = sprintf("%sframe_negative.png", filePrefix),
-    format = "png")
+    sprintf("%sframe_negative.tiff", filePrefix))
   rm(stencilFrameNeg);gc()
 
   stencilFramePos <-
@@ -172,10 +212,9 @@ createPageStencils <- function(p, pan, dpi, filePrefix) {
       stencilFrame,
       operator='copy-opacity')
 
-  image_write(
+  writeMagickImage(
     stencilFramePos,
-    path = sprintf("%sframe_positive.png", filePrefix),
-    format = "png")
+    sprintf("%sframe_positive.tiff", filePrefix))
   rm(stencilFramePos);gc()
 
   rm(list = ls());gc()
@@ -225,10 +264,9 @@ createSinglePanelStencils <- function(d, pan, dpi, filePrefix) {
     )
   rm(stencilUnframeedPanel);gc()
 
-  image_write(
+  writeMagickImage(
     stencilNegative,
-    path = sprintf("%snegative.png", filePrefix),
-    format = "png")
+    sprintf("%snegative.tiff", filePrefix))
   rm(stencilNegative);gc()
 
   stencilPositive <-
@@ -237,10 +275,9 @@ createSinglePanelStencils <- function(d, pan, dpi, filePrefix) {
       stencilPanel,
       operator='copy-opacity')
 
-  image_write(
+  writeMagickImage(
     stencilPositive,
-    path = sprintf("%spositive.png", filePrefix),
-    format = "png")
+    sprintf("%spositive.tiff", filePrefix))
   rm(stencilPositive);gc()
 
   rm(list = ls());gc()
@@ -281,14 +318,34 @@ createBlank <- function(color, pan, dpi, fileName, overwrite=FALSE) {
   pxPerInch <- dpi
   pxPerCm <- pxPerInch/cmPerInch
 
-  grDevices::png(
-    fileName,
+  img <- image_graph(
     width = round(geometry$size$w * pxPerCm),
     height = round(geometry$size$h * pxPerCm),
-    bg = color,
-    res = dpi)
-
+    res = pxPerInch,
+    bg = color)
+  graphics::par(mar = c(0,0,0,0), xaxs = "i", xaxt="n", yaxs = "i", yaxt="n", bg=color)
   graphics::plot.new()
-
   grDevices::dev.off()
+
+  writeMagickImage(img, fileName)
+  rm(img);gc()
+}
+
+
+writeMagickImage <- function(img, fileName) {
+  img <- image_convert(
+    img,
+    format = "tiff",
+    type = "ColorSeparationAlpha",
+    colorspace = "cmyk",
+    depth = 8,
+    antialias = TRUE,
+    matte = TRUE)
+  image_write(
+    img,
+    path = fileName,
+    format = "tiff",
+    compression = "Zip")
+  rm(img);gc()
+  return(invisible())
 }

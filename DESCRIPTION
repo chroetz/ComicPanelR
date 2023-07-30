@@ -15,6 +15,7 @@ Imports:
     geos,
     graphics,
     grDevices,
+    jsonlite,
     magick,
     rlang,
     stringr,
