@@ -20,3 +20,12 @@ writeMagickImage <- function(img, fileName) {
   return(invisible())
 }
 
+
+readMagickImage <- function(fileName) {
+  image_read(
+    fileName,
+    depth = 8
+  ) |>
+    formatImage()
+}
+

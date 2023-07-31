@@ -98,7 +98,7 @@ createPageStencils <- function(p, pan, dpi, filePrefix) {
 
   img <- setupDevice(pan, dpi)
   grDevices::dev.off()
-  channels <- image_separate(img)
+  channels <- image_separate(img) # TODO: this seems unnecessary
   stencilEmpty <- channels[1]
   rm(img);rm(channels);gc()
 

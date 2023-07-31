@@ -25,8 +25,8 @@ merge <- function(info) {
     matte = TRUE)
 
   for (nf in info$panels) {
-    positive <- image_read(nf$positive)
-    image <- image_read(nf$image)
+    positive <- readMagickImage(nf$positive)
+    image <- readMagickImage(nf$image)
     panel <- image_composite(
       image,
       positive,
@@ -41,12 +41,12 @@ merge <- function(info) {
 
   page <- image_composite(
     page,
-    image_read(info$belowGutter),
+    readMagickImage(info$belowGutter),
     operator="over")
   gc()
 
-  positive <- image_read(info$gutter$positive)
-  image <- image_read(info$gutter$image)
+  positive <- readMagickImage(info$gutter$positive)
+  image <- readMagickImage(info$gutter$image)
   gutter <- image_composite(
     image,
     positive,
@@ -59,8 +59,8 @@ merge <- function(info) {
     operator="over")
   rm(gutter);gc()
 
-  positive <- image_read(info$frame$positive)
-  image <- image_read(info$frame$image)
+  positive <- readMagickImage(info$frame$positive)
+  image <- readMagickImage(info$frame$image)
   frame <- image_composite(
     image,
     positive,
@@ -74,7 +74,7 @@ merge <- function(info) {
 
   page <- image_composite(
     page,
-    image_read(info$aboveGutter),
+    readMagickImage(info$aboveGutter),
     operator="over")
   gc()
 
