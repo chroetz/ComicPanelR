@@ -8,26 +8,27 @@ createStencils <- function() {
   for (i in seq_len(nrow(files))) {
     createStencilsOne(
       fileInStore = files$file1[i],
-      fileInOpts = files$file2[i])
+      fileInOpts = files$file2[i],
+      fileOutMerge = paste0("mergeinfo", files$suffix[i], ".json"))
   }
 
   return(invisible())
 }
 
-createStencilsOne <- function(fileInStore, fileInOpts) {
+createStencilsOne <- function(fileInStore, fileInOpts, fileOutMerge) {
   panelsAndPan <- readRDS(fileInStore)
   pan <- panelsAndPan$pan
   panels <- panelsAndPan$panels
   renderOpts <- ConfigOpts::readOpts(fileInOpts, "Render")
 
   frameStyles <- getFrameStyles(renderOpts, pan)
-  panel2stencil(panels, pan, frameStyles, dpi = renderOpts$dpi)
+  panel2stencil(panels, pan, frameStyles, dpi = renderOpts$dpi, fileOutMerge=fileOutMerge)
   gc()
 }
 
 
 # Convert Coordinates File to Image
-panel2stencil <- function(panels, pan, frameStyles, dpi) {
+panel2stencil <- function(panels, pan, frameStyles, dpi, fileOutMerge) {
 
   panelsAndFrames <-
     panels |>
@@ -57,12 +58,12 @@ panel2stencil <- function(panels, pan, frameStyles, dpi) {
     createBlank(colors[i], pan, dpi, sprintf("%s_%03d_image.tiff", pan$name, i))
   }
 
-  createMergeInfo(panels, pan, dpi)
+  createMergeInfo(panels, pan, dpi, fileOutMerge)
 
   return(invisible())
 }
 
-createMergeInfo <- function(panels, pan, dpi) {
+createMergeInfo <- function(panels, pan, dpi, fileOut) {
   geo <- pan$geometry
   n <- panels$panelId |> unique() |> length()
 
@@ -95,7 +96,7 @@ createMergeInfo <- function(panels, pan, dpi) {
 
   jsonlite::write_json(
     info,
-    "mergeinfo.json",
+    fileOut,
     auto_unbox = TRUE,
     pretty = TRUE)
 

@@ -8,19 +8,21 @@ getFilePairs <- function(prefix1, ending1, prefix2, ending2, path = ".") {
     suffix = commonSuffix,
     file1 = file.path(path, paste0(prefix1, commonSuffix, ".", ending1)),
     file2 = file.path(path, paste0(prefix2, commonSuffix, ".", ending2)))
-  if ("" %in% suffix1) {
-    noMatchSuffix2 <- setdiff(suffix2, commonSuffix)
+  for (s1 in setdiff(suffix1, commonSuffix)) {
+    s2 <- findMatch(s1, suffix2)
+    if (length(s2) == 0) next
     out <- bind_rows(out, tibble(
-      suffix = noMatchSuffix2,
-      file1 = file.path(path, paste0(prefix1, ".", ending1)),
-      file2 = file.path(path, paste0(prefix2, noMatchSuffix2, ".", ending2))))
+      suffix = s1,
+      file1 = file.path(path, paste0(prefix1, s1, ".", ending1)),
+      file2 = file.path(path, paste0(prefix2, s2, ".", ending2))))
   }
-  if ("" %in% suffix2) {
-    noMatchSuffix1 <- setdiff(suffix1, commonSuffix)
+  for (s2 in setdiff(suffix2, commonSuffix)) {
+    s1 <- findMatch(s2, suffix1)
+    if (length(s1) == 0) next
     out <- bind_rows(out, tibble(
-      suffix = noMatchSuffix1,
-      file1 = file.path(path, paste0(prefix1, noMatchSuffix1, ".", ending1)),
-      file2 = file.path(path, paste0(prefix2, ".", ending2))))
+      suffix = s2,
+      file1 = file.path(path, paste0(prefix1, s1, ".", ending1)),
+      file2 = file.path(path, paste0(prefix2, s2, ".", ending2))))
   }
 
   # check
@@ -29,5 +31,23 @@ getFilePairs <- function(prefix1, ending1, prefix2, ending2, path = ".") {
     stopifnot(file.exists(out$file2[i]))
   }
 
+  return(out)
+}
+
+# The match is the longest prefix of `query` that is contained in `candidates`.
+findMatch <- function(query, candiates) {
+  sel <- startsWith(query, candiates)
+  x <- candiates[sel]
+  if (length(x) == 0) return(NULL)
+  return(x[nchar(x) == max(nchar(x))])
+}
+
+
+getFiles <- function(prefix, ending, path = ".") {
+  files <- dir(path = path, pattern = paste0("^", prefix, ".*\\.", ending, "$"))
+  suffix <- str_match(files, paste0("^", prefix, "(.*)\\.", ending, "$"))[,2]
+  out <- tibble(
+    suffix = suffix,
+    file = file.path(path, paste0(prefix, suffix, ".", ending)))
   return(out)
 }

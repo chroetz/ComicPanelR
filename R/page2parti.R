@@ -1,14 +1,11 @@
 #' @export
 createBaseParti <- function() {
-  fileInPage <- dir(pattern="^opt_01_page.*\\.json$")
-  suffix <- str_match(fileInPage, "^opt_01_page(.*)\\.json$")[,2]
-  fileOutPng <- paste0("preview_01_parti", suffix, ".png")
-  fileOutRds <- paste0("store_01_parti", suffix, ".RDS")
-  for (i in seq_along(fileInPage)) {
+  files <- getFiles("opt_01_page", "json")
+  for (i in seq_len(nrow(files))) {
     createBasePartiOne(
-      fileInOpts = fileInPage[i],
-      fileOutPng = fileOutPng[i],
-      fileOutRds = fileOutRds[i])
+      fileInOpts = files$file[i],
+      fileOutPng = paste0("preview_01_parti", files$suffix[i], ".png"),
+      fileOutRds = paste0("store_01_parti", files$suffix[i], ".RDS"))
   }
 }
 

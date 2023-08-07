@@ -4,14 +4,32 @@
 		+ multiple segemnts as one time interval
 		+ remove n as variable
 	- zick-zack
+	- bezier
 * Render:
 	- bug with sides draw false?
-	- suffixed files -> merge info with suffix
+	o suffixed files -> merge info with suffix
+	- always show segments and vertices
+* Margin:
+	- allow to extrapolate lines border lines linearly when calculating panel margin
+* Effect:
+	- ToPageEnd: allow to extrapolate lines linearly instead of just putting coorinates to end
 * General:
+	o allow suffix "a" to be used for "a1" and "a2"
+	- allow overwrite name in later steps
 	- does Remove effect introduce problems??
 	- circular panel 
 	- bleed and side margin and safety as stencils?
-	- pixel issue requires magick 2.7.5
-	- tutorial / description
-
+	o pixel issue: requires magick 2.7.5
+	- tutorial / description / documentation / examples / tests
+	- better calculations of segments from raw graph
+	- check for new segments/vertices after border effects (transformation)
+	- make console output more informative
+	- ? make interactive console program ? 
+* rename
+	- sideMargin to pageMargin
+	- steps:
+		* put vertex (deco) and border line effects (transformation) into one (border effects)
+		* margin -> panel margin 
+		* effect -> panel area effect?
+	- check naming of sides and segments
 		

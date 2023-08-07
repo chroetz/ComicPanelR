@@ -1,9 +1,16 @@
 #' @export
 createMerged <- function() {
-  mergeInfo <- jsonlite::read_json("mergeinfo.json")
-  merge(mergeInfo)
+  files <- getFiles("mergeinfo", "json")
+  for (i in seq_len(nrow(files))) {
+    createMergedOne(
+      fileInMerge = files$file[i])
+  }
 }
 
+createMergedOne <- function(fileInMerge) {
+  mergeInfo <- jsonlite::read_json(fileInMerge)
+  merge(mergeInfo)
+}
 
 merge <- function(info) {
 
