@@ -63,17 +63,14 @@ panel2stencil <- function(panels, pan, frameStyles, dpi) {
 }
 
 createMergeInfo <- function(panels, pan, dpi) {
-  geometry <- pan$geometry
-  cmPerInch <- 2.54
-  pxPerInch <- dpi
-  pxPerCm <- pxPerInch/cmPerInch
+  geo <- pan$geometry
   n <- panels$panelId |> unique() |> length()
 
   info <- list(
     name = pan$name,
     dpi = dpi,
-    width = round(geometry$size$w * pxPerCm),
-    height = round(geometry$size$h * pxPerCm),
+    width = getDataWidthInPx(geo, dpi),
+    height = getDataHeightInPx(geo, dpi),
     panels = lapply(
       1:n,
       \(i) {
@@ -323,14 +320,11 @@ createBlank <- function(color, pan, dpi, fileName, overwrite=FALSE) {
     }
   }
 
-  geometry <- pan$geometry
-  cmPerInch <- 2.54
-  pxPerInch <- dpi
-  pxPerCm <- pxPerInch/cmPerInch
+  geo <- pan$geometry
 
   img <- image_blank(
-    width = round(geometry$size$w * pxPerCm),
-    height = round(geometry$size$h * pxPerCm),
+    width = getDataWidthInPx(geo, dpi),
+    height = getDataHeightInPx(geo, dpi),
     color = color)
 
   writeMagickImage(img, fileName)
