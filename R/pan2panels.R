@@ -1,21 +1,25 @@
 #' @export
 createPanels <- function() {
 
-  fileInPan <- dir(pattern="^store_03_pan.*\\.RDS$")
-  suffixPan <- str_match(fileInPan, "^store_03_pan(.*)\\.RDS$")[,2]
-  fileInMargin <- dir(pattern="^opt_04_margin.*\\.json$")
-  suffixMargin <- str_match(fileInMargin, "^opt_04_margin(.*)\\.json$")[,2]
-  suffix <- intersect(suffixPan, suffixMargin)
+  files <- getFilePairs(
+    "store_03_pan", "RDS",
+    "opt_04_margin", "json")
 
-  for (s in suffix) {
-    fileOutPng <- paste0("preview_04_panels", s, ".png")
-    fileOutRds <- paste0("store_04_panels", s, ".RDS")
-    pan <- readRDS(fileInPan[s == suffixPan])
-    marginOpts <- ConfigOpts::readOpts(fileInMargin[s == suffixMargin])
-    panels <- makePanels(pan, marginOpts)
-    renderPanels(panels, pan, fileOutPng)
-    saveRDS(list(panels = panels, pan = pan), fileOutRds)
+  for (i in seq_len(nrow(files))) {
+    createPanelsOne(
+      fileInStore = files$file1[i],
+      fileInOpts = files$file2[i],
+      fileOutPng = paste0("preview_04_panels", files$suffix[i], ".png"),
+      fileOutRds = paste0("store_04_panels", files$suffix[i], ".RDS"))
   }
+}
+
+createPanelsOne <- function(fileInStore, fileInOpts, fileOutPng, fileOutRds) {
+  pan <- readRDS(fileInStore)
+  marginOpts <- ConfigOpts::readOpts(fileInOpts, c("Margin"))
+  panels <- makePanels(pan, marginOpts)
+  renderPanels(panels, pan, fileOutPng)
+  saveRDS(list(panels = panels, pan = pan), fileOutRds)
 }
 
 makePanels <- function(pan, marginOpts) {
@@ -116,6 +120,7 @@ makeInner <- function(sides, margin) {
     segment <- geos_make_linestring(seg[,1], seg[,2])
     geos_distance(segment, points)
   })
+
   excessDists <- dsts - rep(margin, each=nrow(dsts))
   idxs <- apply(excessDists < eps, 2, which, simplify=FALSE)
   idxs <- lapply(idxs, \(idx) {
@@ -143,25 +148,16 @@ makeInner <- function(sides, margin) {
 
 
 renderPanels <- function(panels, pan, fileOut, dpi=300, drawBorder=TRUE, drawSegText=TRUE, drawPanelText=TRUE) {
-  geometry <- pan$geometry
-  box <- makeBox(0, 0, geometry$size$w, geometry$size$h)
-  cmPerInch <- 2.54
-  pxPerInch <- dpi
-  pxPerCm <- pxPerInch/cmPerInch
-  grDevices::png(
-    filename = fileOut,
-    width = round(geometry$size$w * pxPerCm),
-    height = round(geometry$size$h * pxPerCm),
-    res = 300)
-  graphics::par(mar = c(0,0,0,0), xaxs = "i", xaxt="n", yaxs = "i", yaxt="n", bg="#FF0000")
-  graphics::plot.new()
-  brdr <- geometry$sideMargin + geometry$bleed
-  graphics::plot.window(xlim = c(box$x-brdr, box$x+box$w+brdr), ylim = c(box$y+box$h+brdr, box$y-brdr))
-  graphics::rect(
-    box$x-geometry$sideMargin, box$y-geometry$sideMargin, box$x+box$w+geometry$sideMargin, box$y+box$h+geometry$sideMargin,
-    col = "#FFFFFF", border=NA)
+  geo <- pan$geometry
+  finalBox <- getFinalBoxInCm(geo)
+  plotPageWithBleed(geo, dpi, fileOut)
   drawPanels(panels, pan, drawBorder, drawSegText, drawPanelText)
-  graphics::text(box$x + box$w/2, box$y-geometry$sideMargin/2, pan$name, adj = c(0.5, 0.5), cex=2, col="black")
+  graphics::text(
+    finalBox$midX,
+    finalBox$y+geo$sideMargin/2,
+    pan$name,
+    adj = c(0.5, 0.5),
+    cex=2, col="black")
   grDevices::dev.off()
 }
 

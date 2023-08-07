@@ -1,26 +1,30 @@
 #' @export
 createStencils <- function() {
 
-  fileInPanelsAndPan <- dir(pattern="^store_05_panels-effect.*\\.RDS$")
-  suffixPanelsAndPan <- str_match(fileInPanelsAndPan, "^store_05_panels-effect(.*)\\.RDS$")[,2]
-  fileInRender <- dir(pattern="^opt_06_render.*\\.json$")
-  suffixRender <- str_match(fileInRender, "^opt_06_render(.*)\\.json$")[,2]
-  suffix <- intersect(suffixPanelsAndPan, suffixRender)
+  files <- getFilePairs(
+    "store_05_panels-effect", "RDS",
+    "opt_06_render", "json")
 
-  for (s in suffix) {
-
-    panelsAndPan <- readRDS(fileInPanelsAndPan[s == suffixPanelsAndPan])
-    pan <- panelsAndPan$pan
-    panels <- panelsAndPan$panels
-    renderOpts <- ConfigOpts::readOpts(fileInRender[s == suffixRender], "Render")
-
-    frameStyles <- getFrameStyles(renderOpts, pan)
-    panel2stencil(panels, pan, frameStyles, dpi = renderOpts$dpi)
-    gc()
+  for (i in seq_len(nrow(files))) {
+    createStencilsOne(
+      fileInStore = files$file1[i],
+      fileInOpts = files$file2[i])
   }
 
   return(invisible())
 }
+
+createStencilsOne <- function(fileInStore, fileInOpts) {
+  panelsAndPan <- readRDS(fileInStore)
+  pan <- panelsAndPan$pan
+  panels <- panelsAndPan$panels
+  renderOpts <- ConfigOpts::readOpts(fileInOpts, "Render")
+
+  frameStyles <- getFrameStyles(renderOpts, pan)
+  panel2stencil(panels, pan, frameStyles, dpi = renderOpts$dpi)
+  gc()
+}
+
 
 # Convert Coordinates File to Image
 panel2stencil <- function(panels, pan, frameStyles, dpi) {
@@ -292,22 +296,21 @@ createSinglePanelStencils <- function(d, pan, dpi, filePrefix) {
 }
 
 setupDevice <- function(pan, dpi) {
-  geometry <- pan$geometry
-  box <- makeBox(0, 0, geometry$size$w, geometry$size$h)
-  cmPerInch <- 2.54
-  pxPerInch <- dpi
-  pxPerCm <- pxPerInch/cmPerInch
+  geo <- pan$geometry
 
   img <- image_graph(
-    width = round(geometry$size$w * pxPerCm),
-    height = round(geometry$size$h * pxPerCm),
-    res = pxPerInch,
+    width = getDataWidthInPx(geo, dpi),
+    height = getDataHeightInPx(geo, dpi),
+    res = dpi,
     bg = "#000000")
 
-  graphics::par(mar = c(0,0,0,0), xaxs = "i", xaxt="n", yaxs = "i", yaxt="n", bg="#000000")
+  graphics::par(
+    mar = c(0,0,0,0),
+    xaxs = "i", xaxt="n", yaxs = "i", yaxt="n",
+    bg="#000000")
   graphics::plot.new()
-  brdr <- geometry$sideMargin + geometry$bleed
-  graphics::plot.window(xlim = c(box$x-brdr, box$x+box$w+brdr), ylim = c(box$y+box$h+brdr, box$y-brdr))
+  dataBox <- getDataBoxInCm(geo)
+  graphics::plot.window(xlim = dataBox$xlim, ylim = dataBox$ylim)
 
   return(img)
 }

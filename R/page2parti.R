@@ -5,19 +5,26 @@ createBaseParti <- function() {
   fileOutPng <- paste0("preview_01_parti", suffix, ".png")
   fileOutRds <- paste0("store_01_parti", suffix, ".RDS")
   for (i in seq_along(fileInPage)) {
-    page <- ConfigOpts::readOpts(fileInPage[i], "Page")
-    parti <- page2parti(page)
-    renderParti(parti, fileOutPng[i])
-    saveRDS(parti, fileOutRds[i])
+    createBasePartiOne(
+      fileInOpts = fileInPage[i],
+      fileOutPng = fileOutPng[i],
+      fileOutRds = fileOutRds[i])
   }
 }
 
+createBasePartiOne <- function(fileInOpts, fileOutPng, fileOutRds) {
+  page <- ConfigOpts::readOpts(fileInOpts, "Page")
+  parti <- page2parti(page)
+  renderParti(parti, fileOutPng)
+  saveRDS(parti, fileOutRds)
+}
 
 page2parti <- function(page) {
   page <- ConfigOpts::asOpts(page, "Page")
   className <- ConfigOpts::getClassAt(page, 2)
   parti <- switch(
     className,
+    "Free" = partiFromFreePage(page),
     "Rowwise" = partiFromRowwisePage(page),
     "Layout" = partiFromLayoutPage(page),
     stop(paste0("Unknown Page Class ", className))
@@ -66,9 +73,13 @@ partiFromRowwisePage <- function(page) {
 
 partiFromLayoutPage <- function(page) {
   page <- ConfigOpts::asOpts(page, c("Layout", "Page"))
-  box <- makeBox(0, 0, page$geometry$size$w, page$geometry$size$h)
-  layout <- page$panelArea
-  coorPanels <- getLayoutPanels(layout, box)
+  panelBox <- getPanelBoxInCm(page$geometry)
+  coorPanels <- getLayoutPanels(page$panelArea, panelBox)
+  parti <- partiFromCoords(page$name, page$geometry, coorPanels)
+  return(parti)
+}
+
+partiFromCoords <- function(name, geometry, coorPanels) {
   idPanelsAndVertices <- coorPanels2Id(coorPanels)
   vertices <- idPanelsAndVertices$vertices
   rectIdPanels <- idPanelsAndVertices$idPanels
@@ -77,10 +88,16 @@ partiFromLayoutPage <- function(page) {
   names(polygonIdPanels) <- paste0("P", seq_along(polygonIdPanels))
   parti <- ConfigOpts::makeOpts(
     "Parti",
-    name = page$name,
-    geometry = page$geometry,
+    name = name,
+    geometry = geometry,
     vertices = vertices,
     idPanels = polygonIdPanels)
+  return(parti)
+}
+
+partiFromFreePage <- function(page) {
+  page <- ConfigOpts::asOpts(page, c("Free", "Page"))
+  parti <- partiFromCoords(page$name, page$geometry, page$panels)
   return(parti)
 }
 
@@ -95,13 +112,16 @@ rectPanel <- function(x, y, w, h) {
     ncol = 2)
 }
 
-makeBox <- function(x, y, w, h) {
-  list(
-    x = x,
-    y = y,
-    w = w,
-    h = h)
+rectPanelFromBox <- function(box) {
+  matrix(
+    c(box$left, box$top,
+      box$left, box$bottom,
+      box$right, box$bottom,
+      box$right, box$top),
+    byrow=TRUE,
+    ncol = 2)
 }
+
 
 getColumnPanels <- function(layout, box) {
   layout <- ConfigOpts::asOpts(layout, c("Column", "Layout"))
@@ -139,7 +159,7 @@ getLayoutPanels <- function(layout, box) {
     className,
     "Column" = getColumnPanels(layout, box),
     "Row" = getRowPanels(layout, box),
-    "Panel" = list(do.call(rectPanel, box))
+    "Panel" = list(rectPanelFromBox(box))
   )
   return(panels)
 }
@@ -157,18 +177,22 @@ coorPanels2Id <- function(panels) {
   newId <- representativeIdx[sel]
   uniqueCoors <- coors[sel, ]
   ids <- sapply(representativeIdx, \(idx) which(newId == idx))
-  panelsCoorIds <- matrix(ids, byrow = TRUE, ncol = 4)
 
-  panelCoorsCheck <- apply(panelsCoorIds, 1, \(row) uniqueCoors[row, ], simplify=FALSE)
+  panelVertexCount <- sapply(panels, nrow)
+  panelIdxEnd <- cumsum(panelVertexCount)
+  panelIdxesStart <- panelIdxEnd - panelVertexCount + 1
+  panelIdxes <- lapply(seq_along(panels), \(i) panelIdxesStart[i]:panelIdxEnd[i])
+
+  idPanels <- lapply(seq_along(panels), \(i) ids[panelIdxes[[i]]])
+
+  panelCoorsCheck <- lapply(idPanels, \(ids) uniqueCoors[ids, , drop=FALSE])
   for (i in seq_along(panelCoorsCheck)) {
     stopifnot(mean(abs(panelCoorsCheck[[i]] - panels[[i]])) < eps)
   }
 
-  panels <- apply(panelsCoorIds, 1, force, simplify=FALSE)
-
   list(
     vertices = uniqueCoors,
-    idPanels = panels)
+    idPanels = idPanels)
 }
 
 drawPartiPolygons <- function(parti, box) {
@@ -198,24 +222,15 @@ drawNode <- function(pos, txt, r = 0.5, fill="#EEEEEE", draw="#000000", textColo
 }
 
 renderParti <- function(parti, fileOut, dpi = 300) {
-  geometry <- parti$geometry
-  box <- makeBox(0, 0, geometry$size$w, geometry$size$h)
-  cmPerInch <- 2.54
-  pxPerInch <- dpi
-  pxPerCm <- pxPerInch/cmPerInch
-  grDevices::png(
-    filename = fileOut,
-    width = round(geometry$size$w * pxPerCm),
-    height = round(geometry$size$h * pxPerCm),
-    res = 300)
-  graphics::par(mar = c(0,0,0,0), xaxs = "i", xaxt="n", yaxs = "i", yaxt="n", bg="#FF0000")
-  graphics::plot.new()
-  brdr <- geometry$sideMargin + geometry$bleed
-  graphics::plot.window(xlim = c(box$x-brdr, box$x+box$w+brdr), ylim = c(box$y+box$h+brdr, box$y-brdr))
-  graphics::rect(
-    box$x-geometry$sideMargin, box$y-geometry$sideMargin, box$x+box$w+geometry$sideMargin, box$y+box$h+geometry$sideMargin,
-    col = "#FFFFFF", border=NA)
+  geo <- parti$geometry
+  finalBox <- getFinalBoxInCm(geo)
+  plotPageWithBleed(geo, dpi, fileOut)
   drawPartiPolygons(parti)
-  graphics::text(box$x + box$w/2, box$y-geometry$sideMargin/2, parti$name, adj = c(0.5, 0.5), cex=2, col="black")
+  graphics::text(
+    finalBox$midX,
+    finalBox$y+geo$sideMargin/2,
+    parti$name,
+    adj = c(0.5, 0.5),
+    cex=2, col="black")
   grDevices::dev.off()
 }

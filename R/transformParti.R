@@ -1,19 +1,23 @@
 #' @export
 createTransformedParti <- function() {
-  fileInParti <- dir(pattern="^store_01_parti.*\\.RDS$")
-  suffixParti <- str_match(fileInParti, "^store_01_parti(.*)\\.RDS$")[,2]
-  fileInTransform <- dir(pattern="^opt_02_transform.*\\.json$")
-  suffixTransform <- str_match(fileInTransform, "^opt_02_transform(.*)\\.json$")[,2]
-  suffix <- intersect(suffixParti, suffixTransform)
-  for (s in suffix) {
-    fileOutPng <- paste0("preview_02_parti-tr", s, ".png")
-    fileOutRds <- paste0("store_02_parti-tr", s, ".RDS")
-    parti <- readRDS(fileInParti[suffixParti == s])
-    transformOpts <- ConfigOpts::readOpts(fileInTransform[suffixTransform == s], c("Transform", "List"))
-    parti <- transformParti(parti, transformOpts$list)
-    renderParti(parti, fileOutPng)
-    saveRDS(parti, fileOutRds)
+  files <- getFilePairs(
+    "store_01_parti", "RDS",
+    "opt_02_transform", "json")
+  for (i in seq_len(nrow(files))) {
+    createTransformedPartiOne(
+      fileInStore = files$file1[i],
+      fileInOpts = files$file2[i],
+      fileOutPng = paste0("preview_02_parti-tr", files$suffix[i], ".png"),
+      fileOutRds = paste0("store_02_parti-tr", files$suffix[i], ".RDS"))
   }
+}
+
+createTransformedPartiOne <- function(fileInStore, fileInOpts, fileOutPng, fileOutRds) {
+  parti <- readRDS(fileInStore)
+  transformOpts <- ConfigOpts::readOpts(fileInOpts, c("Transform", "List"))
+  parti <- transformParti(parti, transformOpts$list)
+  renderParti(parti, fileOutPng)
+  saveRDS(parti, fileOutRds)
 }
 
 

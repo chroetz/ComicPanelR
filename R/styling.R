@@ -1,33 +1,36 @@
 #' @export
 createPanelsWithEffects <- function() {
 
-  fileInPanelsAndPan <- dir(pattern="^store_04_panels.*\\.RDS$")
-  suffixPanelsAndPan <- str_match(fileInPanelsAndPan, "^store_04_panels(.*)\\.RDS$")[,2]
-  fileInEffects <- dir(pattern="^opt_05_effect.*\\.json$")
-  suffixEffects <- str_match(fileInEffects, "^opt_05_effect(.*)\\.json$")[,2]
-  suffix <- intersect(suffixPanelsAndPan, suffixEffects)
+  files <- getFilePairs(
+    "store_04_panels", "RDS",
+    "opt_05_effect", "json")
 
-  for (s in suffix) {
-    fileOutPng <- paste0("preview_05_panels-effect", s, ".png")
-    fileOutRds <- paste0("store_05_panels-effect", s, ".RDS")
-
-    panelsAndPan <- readRDS(fileInPanelsAndPan[s == suffixPanelsAndPan])
-    pan <- panelsAndPan$pan
-    panels <- panelsAndPan$panels
-
-    effectList <- ConfigOpts::readOpts(fileInEffects[s == suffixEffects], c("Effect", "List"))
-    decoratedPanels <- applyEffectsToPanels(panels, effectList$list, pan)
-
-    renderPanels(
-      decoratedPanels,
-      pan,
-      fileOutPng,
-      drawBorder=FALSE,
-      drawSegText=FALSE,
-      drawPanelText=FALSE)
-
-    saveRDS(list(panels = decoratedPanels, pan = pan), fileOutRds)
+  for (i in seq_len(nrow(files))) {
+    createPanelsWithEffectsOne(
+      fileInStore = files$file1[i],
+      fileInOpts = files$file2[i],
+      fileOutPng = paste0("preview_05_panels-effect", files$suffix[i], ".png"),
+      fileOutRds = paste0("store_05_panels-effect", files$suffix[i], ".RDS"))
   }
+}
+
+createPanelsWithEffectsOne <- function(fileInStore, fileInOpts, fileOutPng, fileOutRds) {
+  panelsAndPan <- readRDS(fileInStore)
+  pan <- panelsAndPan$pan
+  panels <- panelsAndPan$panels
+
+  effectList <- ConfigOpts::readOpts(fileInOpts, c("Effect", "List"))
+  decoratedPanels <- applyEffectsToPanels(panels, effectList$list, pan)
+
+  renderPanels(
+    decoratedPanels,
+    pan,
+    fileOutPng,
+    drawBorder=FALSE,
+    drawSegText=FALSE,
+    drawPanelText=FALSE)
+
+  saveRDS(list(panels = decoratedPanels, pan = pan), fileOutRds)
 }
 
 
@@ -42,6 +45,10 @@ applyEffectToPanels <- function(panels, effect, pan) {
   panel <-
     panels |>
     filter(panelId == effect$panelId)
+  if (nrow(panel) == 0) {
+    warning("Cannot apply effect to Panel: There is no panel with id ", effect$panelId)
+    return(panels)
+  }
   otherPanels <-
     panels |>
     anti_join(panel, by = join_by(panelId, segmentId))
@@ -71,13 +78,19 @@ effectToPageEnd <- function(panel, effect, pan) {
   n <- nrow(panel)
   for (segId in effect$sideIds) {
     i <- which(panel$segmentId == segId)
+    stopifnot(length(i) < 2)
+    if (length(i) == 0) {
+      warning("Cannot set side to page end: Panel ", panel$panelId[[1]], " does not have side ", segId)
+      next
+    }
     iPrev <- i-1
     iNext <- i+1
     if (iPrev <= 0) iPrev <- n
     if (iNext > n) iNext <- 1
     panel$inner[[i]] <- moveToPagedEnd(panel$inner[[i]], pan)
     panel$inner[[iPrev]] <- rbind(panel$inner[[iPrev]], panel$inner[[i]][1,])
-    panel$inner[[iNext]] <- rbind(panel$inner[[i]], panel$inner[[iNext]])
+    nRow <- nrow(panel$inner[[i]])
+    panel$inner[[iNext]] <- rbind(panel$inner[[i]][nRow,], panel$inner[[iNext]])
   }
   return(panel)
 }
@@ -148,7 +161,7 @@ whichRle <- function(runs, i) {
 }
 
 moveToPagedEnd <- function(path, pan) {
-  r <- pan$geometry$bleed + pan$geometry$sideMargin
+  r <- pan$geometry$bleed
   n <- nrow(path)
   ends <- path[c(1,n), ]
   del <- abs(path[n,]-path[1,])

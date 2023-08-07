@@ -1,23 +1,30 @@
 #' @export
 createDecoratedPan <- function() {
-  fileInParti <- dir(pattern="^store_02_parti-tr.*\\.RDS$")
-  suffixParti <- str_match(fileInParti, "^store_02_parti-tr(.*)\\.RDS$")[,2]
-  fileInDeco <- dir(pattern="^opt_03_deco.*\\.json$")
-  suffixDeco <- str_match(fileInDeco, "^opt_03_deco(.*)\\.json$")[,2]
-  suffix <- intersect(suffixParti, suffixDeco)
-  for (s in suffix) {
-    fileOutPng <- paste0("preview_03_pan", s, ".png")
-    fileOutRds <- paste0("store_03_pan", s, ".RDS")
-    parti <- readRDS(fileInParti[suffixParti == s])
-    decoOpts <- ConfigOpts::readOpts(fileInDeco[suffixDeco == s], c("Deco", "List"))
-    pan <- parti2pan(parti)
-    for (deco in decoOpts$list) {
-      pan$borders <- decorate(pan$borders, deco)
-    }
-    renderPan(pan, fileOutPng)
-    saveRDS(pan, fileOutRds)
+  files <- getFilePairs(
+    "store_02_parti-tr", "RDS",
+    "opt_03_deco", "json")
+
+  for (i in seq_len(nrow(files))) {
+    createDecoratedPanOne(
+      fileInStore = files$file1[i],
+      fileInOpts = files$file2[i],
+      fileOutPng = paste0("preview_03_pan", files$suffix[i], ".png"),
+      fileOutRds = paste0("store_03_pan", files$suffix[i], ".RDS"))
   }
 }
+
+
+createDecoratedPanOne <- function(fileInStore, fileInOpts, fileOutPng, fileOutRds) {
+  parti <- readRDS(fileInStore)
+  decoOpts <- ConfigOpts::readOpts(fileInOpts, c("Deco", "List"))
+  pan <- parti2pan(parti)
+  for (deco in decoOpts$list) {
+    pan$borders <- decorate(pan$borders, deco)
+  }
+  renderPan(pan, fileOutPng)
+  saveRDS(pan, fileOutRds)
+}
+
 
 decorate <- function(borders, deco) {
   className <- ConfigOpts::getClassAt(deco, 2)
@@ -85,25 +92,16 @@ sinifyPath <- function(path, time, amplitude, n) {
 
 
 renderPan <- function(pan, fileOut, dpi = 300) {
-  geometry <- pan$geometry
-  box <- makeBox(0, 0, geometry$size$w, geometry$size$h)
-  cmPerInch <- 2.54
-  pxPerInch <- dpi
-  pxPerCm <- pxPerInch/cmPerInch
-  grDevices::png(
-    filename = fileOut,
-    width = round(geometry$size$w * pxPerCm),
-    height = round(geometry$size$h * pxPerCm),
-    res = 300)
-  graphics::par(mar = c(0,0,0,0), xaxs = "i", xaxt="n", yaxs = "i", yaxt="n", bg="#FF0000")
-  graphics::plot.new()
-  brdr <- geometry$sideMargin + geometry$bleed
-  graphics::plot.window(xlim = c(box$x-brdr, box$x+box$w+brdr), ylim = c(box$y+box$h+brdr, box$y-brdr))
-  graphics::rect(
-    box$x-geometry$sideMargin, box$y-geometry$sideMargin, box$x+box$w+geometry$sideMargin, box$y+box$h+geometry$sideMargin,
-    col = "#FFFFFF", border=NA)
+  geo <- pan$geometry
+  finalBox <- getFinalBoxInCm(geo)
+  plotPageWithBleed(geo, dpi, fileOut)
   drawPan(pan)
-  graphics::text(box$x + box$w/2, box$y-geometry$sideMargin/2, pan$name, adj = c(0.5, 0.5), cex=2, col="black")
+  graphics::text(
+    finalBox$midX,
+    finalBox$y+geo$sideMargin/2,
+    pan$name,
+    adj = c(0.5, 0.5),
+    cex=2, col="black")
   grDevices::dev.off()
 }
 
