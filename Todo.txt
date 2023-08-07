@@ -1,5 +1,3 @@
-* Page:
-	- free
 * Deco:
 	- sine
 		+ time -> frequency
