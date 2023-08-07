@@ -1,26 +1,33 @@
 #' @export
-createPanelsWithEffects <- function(
-    fileInPanelsAndPan = "store_04_panels.RDS",
-    fileInEffects = "opt_05_effect.json",
-    fileOutPng = "preview_05_panels-effect.png",
-    fileOutRds = "store_05_panels-effect.RDS"
-) {
-  panelsAndPan <- readRDS(fileInPanelsAndPan)
-  pan <- panelsAndPan$pan
-  panels <- panelsAndPan$panels
+createPanelsWithEffects <- function() {
 
-  effectList <- ConfigOpts::readOpts(fileInEffects, c("Effect", "List"))
-  decoratedPanels <- applyEffectsToPanels(panels, effectList$list, pan)
+  fileInPanelsAndPan <- dir(pattern="^store_04_panels.*\\.RDS$")
+  suffixPanelsAndPan <- str_match(fileInPanelsAndPan, "^store_04_panels(.*)\\.RDS$")[,2]
+  fileInEffects <- dir(pattern="^opt_05_effect.*\\.json$")
+  suffixEffects <- str_match(fileInEffects, "^opt_05_effect(.*)\\.json$")[,2]
+  suffix <- intersect(suffixPanelsAndPan, suffixEffects)
 
-  renderPanels(
-    decoratedPanels,
-    pan,
-    fileOutPng,
-    drawBorder=FALSE,
-    drawSegText=FALSE,
-    drawPanelText=FALSE)
+  for (s in suffix) {
+    fileOutPng <- paste0("preview_05_panels-effect", s, ".png")
+    fileOutRds <- paste0("store_05_panels-effect", s, ".RDS")
 
-  saveRDS(list(panels = decoratedPanels, pan = pan), fileOutRds)
+    panelsAndPan <- readRDS(fileInPanelsAndPan[s == suffixPanelsAndPan])
+    pan <- panelsAndPan$pan
+    panels <- panelsAndPan$panels
+
+    effectList <- ConfigOpts::readOpts(fileInEffects[s == suffixEffects], c("Effect", "List"))
+    decoratedPanels <- applyEffectsToPanels(panels, effectList$list, pan)
+
+    renderPanels(
+      decoratedPanels,
+      pan,
+      fileOutPng,
+      drawBorder=FALSE,
+      drawSegText=FALSE,
+      drawPanelText=FALSE)
+
+    saveRDS(list(panels = decoratedPanels, pan = pan), fileOutRds)
+  }
 }
 
 

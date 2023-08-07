@@ -1,16 +1,23 @@
 #' @export
-createStencils <- function(
-    fileInPanelsAndPan = "store_05_panels-effect.RDS",
-    fileInRender = "opt_06_render.json"
-) {
-  panelsAndPan <- readRDS(fileInPanelsAndPan)
-  pan <- panelsAndPan$pan
-  panels <- panelsAndPan$panels
-  renderOpts <- ConfigOpts::readOpts(fileInRender, "Render")
+createStencils <- function() {
 
-  frameStyles <- getFrameStyles(renderOpts, pan)
-  panel2stencil(panels, pan, frameStyles, dpi = renderOpts$dpi)
-  gc()
+  fileInPanelsAndPan <- dir(pattern="^store_05_panels-effect.*\\.RDS$")
+  suffixPanelsAndPan <- str_match(fileInPanelsAndPan, "^store_05_panels-effect(.*)\\.RDS$")[,2]
+  fileInRender <- dir(pattern="^opt_06_render.*\\.json$")
+  suffixRender <- str_match(fileInRender, "^opt_06_render(.*)\\.json$")[,2]
+  suffix <- intersect(suffixPanelsAndPan, suffixRender)
+
+  for (s in suffix) {
+
+    panelsAndPan <- readRDS(fileInPanelsAndPan[s == suffixPanelsAndPan])
+    pan <- panelsAndPan$pan
+    panels <- panelsAndPan$panels
+    renderOpts <- ConfigOpts::readOpts(fileInRender[s == suffixRender], "Render")
+
+    frameStyles <- getFrameStyles(renderOpts, pan)
+    panel2stencil(panels, pan, frameStyles, dpi = renderOpts$dpi)
+    gc()
+  }
 
   return(invisible())
 }
@@ -318,14 +325,10 @@ createBlank <- function(color, pan, dpi, fileName, overwrite=FALSE) {
   pxPerInch <- dpi
   pxPerCm <- pxPerInch/cmPerInch
 
-  img <- image_graph(
+  img <- image_blank(
     width = round(geometry$size$w * pxPerCm),
     height = round(geometry$size$h * pxPerCm),
-    res = pxPerInch,
-    bg = color)
-  graphics::par(mar = c(0,0,0,0), xaxs = "i", xaxt="n", yaxs = "i", yaxt="n", bg=color)
-  graphics::plot.new()
-  grDevices::dev.off()
+    color = color)
 
   writeMagickImage(img, fileName)
   rm(img);gc()

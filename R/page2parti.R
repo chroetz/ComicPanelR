@@ -1,13 +1,15 @@
 #' @export
-createBaseParti <- function(
-    fileInPage = "opt_01_page.json",
-    fileOutPng = "preview_01_parti.png",
-    fileOutRds = "store_01_parti.RDS"
-) {
-  page <- ConfigOpts::readOpts(fileInPage, "Page")
-  parti <- page2parti(page)
-  renderParti(parti, fileOutPng)
-  saveRDS(parti, fileOutRds)
+createBaseParti <- function() {
+  fileInPage <- dir(pattern="^opt_01_page.*\\.json$")
+  suffix <- str_match(fileInPage, "^opt_01_page(.*)\\.json$")[,2]
+  fileOutPng <- paste0("preview_01_parti", suffix, ".png")
+  fileOutRds <- paste0("store_01_parti", suffix, ".RDS")
+  for (i in seq_along(fileInPage)) {
+    page <- ConfigOpts::readOpts(fileInPage[i], "Page")
+    parti <- page2parti(page)
+    renderParti(parti, fileOutPng[i])
+    saveRDS(parti, fileOutRds[i])
+  }
 }
 
 

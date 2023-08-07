@@ -1,0 +1,19 @@
+* Page:
+	- free
+* Deco:
+	- sine
+		+ time -> frequency
+		+ multiple segemnts as one time interval
+		+ remove n as variable
+	- zick-zack
+* Render:
+	- bug with sides draw false?
+	- suffixed files -> merge info with suffix
+* General:
+	- does Remove effect introduce problems??
+	- circular panel 
+	- bleed and side margin and safety as stencils?
+	- pixel issue requires magick 2.7.5
+	- tutorial / description
+
+		

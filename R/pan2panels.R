@@ -1,15 +1,21 @@
 #' @export
-createPanels <- function(
-    fileInPan = "store_03_pan.RDS",
-    fileInMargin = "opt_04_margin.json",
-    fileOutPng = "preview_04_panels.png",
-    fileOutRds = "store_04_panels.RDS"
-) {
-  pan <- readRDS(fileInPan)
-  marginOpts <- ConfigOpts::readOpts(fileInMargin)
-  panels <- makePanels(pan, marginOpts)
-  renderPanels(panels, pan, fileOutPng)
-  saveRDS(list(panels = panels, pan = pan), fileOutRds)
+createPanels <- function() {
+
+  fileInPan <- dir(pattern="^store_03_pan.*\\.RDS$")
+  suffixPan <- str_match(fileInPan, "^store_03_pan(.*)\\.RDS$")[,2]
+  fileInMargin <- dir(pattern="^opt_04_margin.*\\.json$")
+  suffixMargin <- str_match(fileInMargin, "^opt_04_margin(.*)\\.json$")[,2]
+  suffix <- intersect(suffixPan, suffixMargin)
+
+  for (s in suffix) {
+    fileOutPng <- paste0("preview_04_panels", s, ".png")
+    fileOutRds <- paste0("store_04_panels", s, ".RDS")
+    pan <- readRDS(fileInPan[s == suffixPan])
+    marginOpts <- ConfigOpts::readOpts(fileInMargin[s == suffixMargin])
+    panels <- makePanels(pan, marginOpts)
+    renderPanels(panels, pan, fileOutPng)
+    saveRDS(list(panels = panels, pan = pan), fileOutRds)
+  }
 }
 
 makePanels <- function(pan, marginOpts) {

@@ -1,18 +1,22 @@
 #' @export
-createDecoratedPan <- function(
-    fileInParti = "store_02_parti-tr.RDS",
-    fileInDeco = "opt_03_deco.json",
-    fileOutPng = "preview_03_pan.png",
-    fileOutRds = "store_03_pan.RDS"
-) {
-  parti <- readRDS(fileInParti)
-  decoOpts <- ConfigOpts::readOpts(fileInDeco, c("Deco", "List"))
-  pan <- parti2pan(parti)
-  for (deco in decoOpts$list) {
-    pan$borders <- decorate(pan$borders, deco)
+createDecoratedPan <- function() {
+  fileInParti <- dir(pattern="^store_02_parti-tr.*\\.RDS$")
+  suffixParti <- str_match(fileInParti, "^store_02_parti-tr(.*)\\.RDS$")[,2]
+  fileInDeco <- dir(pattern="^opt_03_deco.*\\.json$")
+  suffixDeco <- str_match(fileInDeco, "^opt_03_deco(.*)\\.json$")[,2]
+  suffix <- intersect(suffixParti, suffixDeco)
+  for (s in suffix) {
+    fileOutPng <- paste0("preview_03_pan", s, ".png")
+    fileOutRds <- paste0("store_03_pan", s, ".RDS")
+    parti <- readRDS(fileInParti[suffixParti == s])
+    decoOpts <- ConfigOpts::readOpts(fileInDeco[suffixDeco == s], c("Deco", "List"))
+    pan <- parti2pan(parti)
+    for (deco in decoOpts$list) {
+      pan$borders <- decorate(pan$borders, deco)
+    }
+    renderPan(pan, fileOutPng)
+    saveRDS(pan, fileOutRds)
   }
-  renderPan(pan, fileOutPng)
-  saveRDS(pan, fileOutRds)
 }
 
 decorate <- function(borders, deco) {
