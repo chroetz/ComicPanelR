@@ -90,3 +90,22 @@ drawBox <- function(box, ...) {
     box$left, box$bottom, box$right, box$top,
     ...)
 }
+
+
+extendSegment <- function(side, geometry) {
+  eps <- .Machine$double.eps |> sqrt()
+  if (nrow(side) < 1) return(side)
+  r <- 1 + geometry$size$width + geometry$size$height # HACKy: large enough number, could also be calculated exactly...
+  v <- side[1,]-side[2,]
+  vNorm <- sqrt(sum(v^2))
+  if (vNorm >= eps) {
+    side <- rbind(side[1,] + v*r, side)
+  }
+  n <- nrow(side)
+  v <- side[n,]-side[n-1,]
+  vNorm <- sqrt(sum(v^2))
+  if (vNorm >= eps) {
+    side <- rbind(side, side[n,]+ r*v)
+  }
+  return(side)
+}

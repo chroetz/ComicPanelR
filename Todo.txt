@@ -10,7 +10,7 @@
 	o suffixed files -> merge info with suffix
 	- always show segments and vertices
 * Margin:
-	- allow to extrapolate lines border lines linearly when calculating panel margin
+	o allow to extrapolate lines border lines linearly when calculating panel margin
 * Effect:
 	- ToPageEnd: allow to extrapolate lines linearly instead of just putting coorinates to end
 * General:
@@ -25,7 +25,8 @@
 	- check for new segments/vertices after border effects (transformation)
 	- make console output more informative
 	- ? make interactive console program ? 
-	- write one opts file with opts form all steps, inserted defaults, package version info, date, ...; and allow using it as input
+	- !write one opts file with opts form all steps, inserted defaults, package version info, date, ...; and allow using it as input
+	- !comma separated names for sides and panels when not doing default
 	- selectors for sides/segments and panels (all vertical, horizontal, ..., comma-separated)
 * rename
 	o sideMargin to (page) margin

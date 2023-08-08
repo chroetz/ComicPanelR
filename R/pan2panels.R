@@ -16,7 +16,7 @@ createPanels <- function() {
 
 createPanelsOne <- function(fileInStore, fileInOpts, fileOutPng, fileOutRds) {
   pan <- readRDS(fileInStore)
-  marginOpts <- ConfigOpts::readOpts(fileInOpts, c("Margin"))
+  marginOpts <- ConfigOpts::readOpts(fileInOpts, "Margins")
   panels <- makePanels(pan, marginOpts)
   renderPanels(panels, pan, fileOutPng)
   saveRDS(list(panels = panels, pan = pan), fileOutRds)
@@ -32,7 +32,7 @@ makePanels <- function(pan, marginOpts) {
     left_join(margins, by = c("panelId", "segmentId")) |>
     nest(data = c(segmentId, side, margin), .by=panelId) |>
     rowwise() |>
-    mutate(inner = list(makeInner(data$side, data$margin))) |>
+    mutate(inner = list(makeInner(data$side, data$margin, pan$geometry))) |>
     ungroup() |>
     unnest(c(data, inner)) |>
     rowwise() |>
@@ -59,24 +59,32 @@ pan2panels <- function(pan) {
 
 
 getMargins <- function(pan, opts) {
-  opts <- ConfigOpts::asOpts(opts, "Margin")
+  opts <- ConfigOpts::asOpts(opts, "Margins")
   margins <-
     pan$idGraph |>
     select(panelId, segmentId) |>
-    mutate(margin = opts$default)
+    rowwise() |>
+    mutate(margin = list(ConfigOpts::asOpts(opts$default, "Margin"))) |>
+    ungroup()
   if (length(opts$panels) > 0) {
     panelMargin <-
-      tibble(id = names(opts$panels), panelMargin = unlist(opts$panels)) |>
+      tibble(
+        id = names(opts$panels),
+        panelMargin = lapply(opts$panels, ConfigOpts::asOpts, optsClass = "Margin")) |>
       mutate(panelId = as.integer(str_extract(id, "[0-9]+", ))) |>
       select(panelId, panelMargin)
     margins <-
       margins |>
       left_join(panelMargin, by="panelId") |>
-      mutate(margin = ifelse(is.na(panelMargin), margin, panelMargin))
+      rowwise() |>
+      mutate(margin = list(if (is.null(panelMargin)) margin else panelMargin)) |>
+      ungroup()
   }
   if (length(opts$sides) > 0) {
     sideMargin <-
-      tibble(id = names(opts$sides), sideMargin = unlist(opts$sides)) |>
+      tibble(
+        id = names(opts$sides),
+        sideMargin = lapply(opts$sides, ConfigOpts::asOpts, optsClass = "Margin")) |>
       mutate(
         panelId = as.integer(str_extract(id, "(?<=[pP])[0-9]+")),
         segmentId = as.integer(str_extract(id, "(?<=[sS])[0-9]+"))) |>
@@ -84,7 +92,9 @@ getMargins <- function(pan, opts) {
     margins <-
       margins |>
       left_join(sideMargin, by=c("panelId", "segmentId")) |>
-      mutate(margin = ifelse(is.na(sideMargin), margin, sideMargin))
+      rowwise() |>
+      mutate(margin = list(if (is.null(sideMargin)) margin else sideMargin)) |>
+      ungroup()
   }
   margins <-
     margins |>
@@ -94,7 +104,7 @@ getMargins <- function(pan, opts) {
 
 
 
-makeInner <- function(sides, margin) {
+makeInner <- function(sides, margin, geometry) {
   eps <- sqrt(.Machine$double.eps)
   n <- length(sides)
   path <- do.call(rbind, sides)
@@ -103,8 +113,12 @@ makeInner <- function(sides, margin) {
   polyInner <- polyBorder
 
   for (k in seq_len(n)) {
-    line <- geos_make_linestring(sides[[k]][,1], sides[[k]][,2])
-    segBuff <- geos_buffer(line, distance = margin[[k]])
+    s <- sides[[k]]
+    if (margin[[k]]$extend) {
+      s <- extendSegment(s, geometry)
+    }
+    line <- geos_make_linestring(s[,1], s[,2])
+    segBuff <- geos_buffer(line, distance = margin[[k]]$size)
     polyInner <- geos_difference(polyInner, segBuff)
   }
 
@@ -116,12 +130,17 @@ makeInner <- function(sides, margin) {
 
   coords <- wk::wk_coords(geos_unique_points(polyInner))
   points <- geos_make_point(coords$x, coords$y)
-  dsts <- sapply(sides, \(seg) {
-    segment <- geos_make_linestring(seg[,1], seg[,2])
+  dsts <- sapply(seq_len(n), \(k) {
+    s <- sides[[k]]
+    if (margin[[k]]$extend) {
+      s <- extendSegment(s, geometry)
+    }
+    segment <- geos_make_linestring(s[,1], s[,2])
     geos_distance(segment, points)
   })
 
-  excessDists <- dsts - rep(margin, each=nrow(dsts))
+  marginSizes <- sapply(margin, \(m) m$size)
+  excessDists <- dsts - rep(marginSizes, each=nrow(dsts))
   idxs <- apply(excessDists < eps, 2, which, simplify=FALSE)
   idxs <- lapply(idxs, \(idx) {
     if (length(idx) == 0) return(idx)

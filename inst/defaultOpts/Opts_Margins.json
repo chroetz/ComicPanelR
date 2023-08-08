@@ -1,0 +1,10 @@
+{
+    "_class": ["Margins", "Opts"],
+    "default": {
+        "_class": ["Margin", "Opts"],
+        "size": 0.25,
+        "extend": true
+    },
+    "panels": {},
+    "sides": {}
+}
