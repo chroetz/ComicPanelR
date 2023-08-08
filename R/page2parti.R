@@ -225,7 +225,7 @@ renderParti <- function(parti, fileOut, dpi = 300) {
   drawPartiPolygons(parti)
   graphics::text(
     finalBox$midX,
-    finalBox$y+geo$sideMargin/2,
+    finalBox$y+geo$margin$top/2,
     parti$name,
     adj = c(0.5, 0.5),
     cex=2, col="black")

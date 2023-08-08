@@ -1,23 +1,28 @@
 .cmPerInch <- 2.54
 
+.sideToIndex <- c(right = 1, top = 2, left = 3, bottom = 4)
+.sideLetterToIndex <- c(r = 1, t = 2, l = 3, b = 4)
+.indexToSide <- c("right", "top", "left", "bottom")
+.indexToSideLetter <- c("r", "t", "l", "b")
+
 convertCmToPx <- function(len, dpi) {
   round(len * dpi / .cmPerInch)
 }
 
 getDataWidthInCm <- function(geometry) {
-  geometry$size$w + 2*geometry$bleed
+  geometry$size$width + geometry$bleed$left + geometry$bleed$right
 }
 
 getDataHeightInCm <- function(geometry) {
-  geometry$size$h + 2*geometry$bleed
+  geometry$size$height + geometry$bleed$top + geometry$bleed$bottom
 }
 
 getFinalWidthInCm <- function(geometry) {
-  geometry$size$w
+  geometry$size$width
 }
 
 getFinalHeightInCm <- function(geometry) {
-  geometry$size$h
+  geometry$size$height
 }
 
 getDataWidthInPx <- function(geometry, dpi) {
@@ -38,26 +43,26 @@ getFinalHeightInPx <- function(geometry, dpi) {
 
 getDataBoxInCm <- function(geometry) {
   makeBox(
-    -geometry$bleed,
-    -geometry$bleed,
-    geometry$size$w+2*geometry$bleed,
-    geometry$size$h+2*geometry$bleed)
+    -geometry$bleed$left,
+    -geometry$bleed$top,
+    geometry$size$width + geometry$bleed$left + geometry$bleed$right,
+    geometry$size$height + geometry$bleed$top + geometry$bleed$bottom)
 }
 
 getFinalBoxInCm <- function(geometry) {
   makeBox(
     0,
     0,
-    geometry$size$w,
-    geometry$size$h)
+    geometry$size$width,
+    geometry$size$height)
 }
 
 getPanelBoxInCm <- function(geometry) {
   makeBox(
-    geometry$sideMargin,
-    geometry$sideMargin,
-    geometry$size$w-2*geometry$sideMargin,
-    geometry$size$h-2*geometry$sideMargin)
+    geometry$margin$left,
+    geometry$margin$top,
+    geometry$size$width - (geometry$margin$left + geometry$margin$right),
+    geometry$size$height - (geometry$margin$top + geometry$margin$bottom))
 }
 
 

@@ -98,7 +98,7 @@ renderPan <- function(pan, fileOut, dpi = 300) {
   drawPan(pan)
   graphics::text(
     finalBox$midX,
-    finalBox$y+geo$sideMargin/2,
+    finalBox$y+geo$margin$top/2,
     pan$name,
     adj = c(0.5, 0.5),
     cex=2, col="black")

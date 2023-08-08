@@ -2,10 +2,21 @@
     "_class": ["Geometry", "Opts"],
     "__size": "end format width and height in cm",
     "size": {
-        "w": 16.8,
-        "h": 26.0
+        "width": 16.8,
+        "height": 26.0
     },
-    "__bleed": "space added to size (on each of the four sides) in cm for cutting off after print",
-    "bleed": 0.3,
-    "sideMargin": 1
+    "__bleed": "space added to size for cutting off after print",
+    "bleed": {
+        "right": 0.3,
+        "top": 0.3,
+        "left": 0.3,
+        "bottom": 0.3
+    },
+    "__margin": "page margin in cm",
+    "margin": {
+        "right": 1,
+        "top": 1,
+        "left": 1,
+        "bottom": 1
+    }
 }

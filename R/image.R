@@ -10,12 +10,13 @@ formatImage <- function(img) {
 }
 
 
-writeMagickImage <- function(img, fileName) {
+writeMagickImage <- function(img, fileName, dpi=NULL) {
   image_write(
     formatImage(img),
     path = fileName,
     format = "tiff",
-    compression = "Zip")
+    compression = "Zip",
+    density = dpi)
   rm(img);gc()
   return(invisible())
 }

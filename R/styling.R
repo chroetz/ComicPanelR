@@ -161,26 +161,26 @@ whichRle <- function(runs, i) {
 }
 
 moveToPagedEnd <- function(path, pan) {
-  r <- pan$geometry$bleed
+  geo <- pan$geometry
   n <- nrow(path)
   ends <- path[c(1,n), ]
   del <- abs(path[n,]-path[1,])
   center <- colMeans(ends)
   if (del[1] > del[2]) {
-    if (center[2] < pan$geometry$size$h / 2) {
+    if (center[2] < geo$size$height / 2) {
       # move to top
-      ends[,2] <- -r
+      ends[,2] <- -geo$bleed$top
     } else {
       # move to bottom
-      ends[,2] <- pan$geometry$size$h+r
+      ends[,2] <- geo$size$height + geo$bleed$bottom
     }
   } else {
-    if (center[1] < pan$geometry$size$w / 2) {
+    if (center[1] < pan$geometry$size$width / 2) {
       # move to left
-      ends[,1] <- -r
+      ends[,1] <- -geo$bleed$left
     } else {
       # move to right
-      ends[,1] <- pan$geometry$size$w+r
+      ends[,1] <- geo$size$width + geo$bleed$right
     }
   }
   return(ends)

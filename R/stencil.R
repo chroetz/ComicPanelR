@@ -328,6 +328,6 @@ createBlank <- function(color, pan, dpi, fileName, overwrite=FALSE) {
     height = getDataHeightInPx(geo, dpi),
     color = color)
 
-  writeMagickImage(img, fileName)
+  writeMagickImage(img, fileName, dpi=dpi)
   rm(img);gc()
 }
