@@ -16,7 +16,17 @@ resizeImage <- function(
     ) {
   if (!dir.exists("tmp")) dir.create("tmp")
   if (reformat) {
-    shell(paste0('magick "', pathDrawn, '" ', .formatString, ' tmp/drawn.tiff'))
+    sprintf(
+      "magick %s -strip tmp/drawn_stripped.tiff",
+      pathDrawn
+    ) |>
+      system()
+    sprintf(
+      "magick tmp/drawn_stripped.tiff -profile %s %s tmp/drawn.tiff",
+      getColorProfilePath(),
+      .formatString
+    ) |>
+      system()
     pathDrawnReady <- "tmp/drawn.tiff"
   } else {
     pathDrawnReady <- pathDrawn

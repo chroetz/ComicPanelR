@@ -44,3 +44,9 @@ setImageMeta <- function(fileName, dpi) {
     system()
 }
 
+getNumberOfLayers <- function(fileName) {
+  res <-
+    paste0('magick identify -format "%n\n" "', fileName, '"') |>
+    system(intern=TRUE)
+  return(length(res))
+}

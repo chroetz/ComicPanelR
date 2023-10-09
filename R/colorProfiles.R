@@ -12,6 +12,17 @@ checkColorProfile <- function(fileName) {
     if (startsWith(profileCmdResult, "magick.exe: no color profile is available"))
       return("No color profile.")
   }
+  if (!file.exists(tmpFileName)) {
+    pattern <- paste0(
+        "*",
+        stringr::str_sub(basename(tmpFileName), end=-5),
+        "-[0-9]+",
+        "\\.icc")
+    profiles <- dir(
+      dirname(tmpFileName),
+      pattern = pattern)
+    return(sprintf("Detected %d profiles.", length(profiles)))
+  }
   comparison <-
     sprintf(
       'fc.exe /b "%s" "%s"',
@@ -20,16 +31,19 @@ checkColorProfile <- function(fileName) {
     ) |>
     system(intern = TRUE) |>
     suppressWarnings()
-  if (length(comparison) == 2) {
+  if (length(comparison) >= 2) {
+    if (comparison[2] == "FC: no differences encountered") return(TRUE)
     first <- strsplit(comparison[2], ":")[[1]][1]
-    if (first == "FC") return(TRUE)
     if (as.integer(first) == 43) return(TRUE)
   }
   return(comparison)
 }
 
 checkAllColorProfiles <- function(path = ".") {
-  fileNames <- dir(pattern="(\\.tif$)|(\\.tiff$)")
+  fileNames <- dir(
+    path = path,
+    pattern="(\\.tif$)|(\\.tiff$)",
+    full.names = TRUE)
   for (fn in fileNames) {
     cat(sprintf("Checking %s... ", fn))
     check <- checkColorProfile(fn)
