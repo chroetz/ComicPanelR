@@ -313,7 +313,7 @@ setupDevice <- function(pan, dpi) {
   return(img)
 }
 
-createBlank <- function(color, pan, dpi, fileName, overwrite=FALSE) {
+createBlank <- function(color, w, h, dpi, fileName, overwrite=FALSE) {
   if (file.exists(fileName)) {
     if (!overwrite) {
       cat(" - not overwriting", fileName, "- ")
@@ -321,13 +321,24 @@ createBlank <- function(color, pan, dpi, fileName, overwrite=FALSE) {
     }
   }
 
+  sprintf(
+    'magick -size %dx%d canvas:%s -profile %s -density %d %s %s',
+    w, h, color,
+    getColorProfilePath(),
+    dpi,
+    .formatString,
+    fileName
+  ) |>
+    system()
+}
+
+createBlankPan <- function(color, pan, dpi, fileName, overwrite=FALSE) {
   geo <- pan$geometry
-
-  img <- image_blank(
-    width = getDataWidthInPx(geo, dpi),
-    height = getDataHeightInPx(geo, dpi),
-    color = color)
-
-  writeMagickImage(img, fileName, dpi=dpi)
-  rm(img);gc()
+  createBlank(
+    color,
+    w = getDataWidthInPx(geo, dpi),
+    h = getDataHeightInPx(geo, dpi),
+    dpi,
+    fileName,
+    overwrite)
 }

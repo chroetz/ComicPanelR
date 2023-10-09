@@ -22,13 +22,15 @@ resizeImage <- function(
     pathDrawnReady <- pathDrawn
   }
   infoDrawn <- tiff::readTIFF(pathDrawnReady, payload = FALSE)
-  sprintf(
-    'magick -size %dx%d canvas:white %s tmp/canvas.tiff',
+
+  createBlank(
+    "white",
     getDataWidthInPx(geo, dpi),
     getDataHeightInPx(geo, dpi),
-    .formatString
-  ) |>
-    shell()
+    dpi,
+    fileName = "tmp/canvas.tiff",
+    overwrite = TRUE)
+
   if (!is.null(innerBorder)) {
     v <- do.call(rbind, innerBorder)
     boxInCm <- makeBox(
@@ -45,7 +47,7 @@ resizeImage <- function(
 
   if (fitExactly) {
     sprintf(
-      'magick %s -resize %dx%d %s tmp/drawnResized.tiff',
+      'magick %s -resize %d\\!x%d\\! %s tmp/drawnResized.tiff',
       pathDrawnReady,
       boxInPx$w,
       boxInPx$h,

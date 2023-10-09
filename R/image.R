@@ -18,6 +18,7 @@ writeMagickImage <- function(img, fileName, dpi=NULL) {
     compression = "Zip",
     density = dpi)
   rm(img);gc()
+  setImageMeta(fileName, dpi)
   return(invisible())
 }
 
@@ -28,5 +29,18 @@ readMagickImage <- function(fileName) {
     depth = 8
   ) |>
     formatImage()
+}
+
+
+setImageMeta <- function(fileName, dpi) {
+  sprintf(
+    "magick %s -strip -profile %s -density %d %s %s",
+    fileName,
+    getColorProfilePath(),
+    dpi,
+    .formatString,
+    fileName
+  ) |>
+    system()
 }
 

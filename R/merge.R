@@ -14,79 +14,64 @@ createMergedOne <- function(fileInMerge) {
 
 merge <- function(info) {
 
-  page <- image_graph(
-    width = info$width,
-    height = info$height,
-    res = info$dpi,
-    bg = "#FFFFFF")
-  graphics::par(mar = c(0,0,0,0), xaxs = "i", xaxt="n", yaxs = "i", yaxt="n", bg="#FFFFFF")
-  graphics::plot.new()
-  grDevices::dev.off()
-  page <- image_convert(
-    page,
-    format = "tiff",
-    type = "ColorSeparationAlpha",
-    colorspace = "cmyk",
-    depth = 8,
-    antialias = TRUE,
-    matte = TRUE)
+  tmpPagePath <- tempfile(fileext = ".tiff")
+
+  cat("creating blank canvas ...\n")
+  createBlank(
+    "white",
+    info$width,
+    info$height,
+    dpi = info$dpi,
+    fileName = tmpPagePath,
+    overwrite = TRUE)
 
   for (nf in info$panels) {
-    positive <- readMagickImage(nf$positive)
-    image <- readMagickImage(nf$image)
-    panel <- image_composite(
-      image,
-      positive,
-      operator = "CopyOpacity")
-    rm(positive,image);gc()
-    page <- image_composite(
-        page,
-        panel,
-        operator="over")
-    rm(panel);gc()
+    cat("adding", nf$image, "...\n")
+    tmpPanelPath <- tempfile(fileext = ".tiff")
+    createCutout(nf$positive, nf$image, tmpPanelPath)
+    composeOver(tmpPanelPath, tmpPagePath, tmpPagePath)
   }
 
-  page <- image_composite(
-    page,
-    readMagickImage(info$belowGutter),
-    operator="over")
-  gc()
+  cat("adding", info$belowGutter, "...\n")
+  composeOver(info$belowGutter, tmpPagePath, tmpPagePath)
 
-  positive <- readMagickImage(info$gutter$positive)
-  image <- readMagickImage(info$gutter$image)
-  gutter <- image_composite(
-    image,
-    positive,
-    operator = "CopyOpacity")
-  rm(positive,image);gc()
+  cat("adding", info$gutter$image, "...\n")
+  tmpGutterPath <- tempfile(fileext = ".tiff")
+  createCutout(info$gutter$positive, info$gutter$image, tmpGutterPath)
+  composeOver(tmpGutterPath, tmpPagePath, tmpPagePath)
 
-  page <- image_composite(
-    page,
-    gutter,
-    operator="over")
-  rm(gutter);gc()
+  cat("adding", info$frame$image, "...\n")
+  tmpFramePath <- tempfile(fileext = ".tiff")
+  createCutout(info$frame$positive, info$frame$image, tmpFramePath)
+  composeOver(tmpFramePath, tmpPagePath, tmpPagePath)
 
-  positive <- readMagickImage(info$frame$positive)
-  image <- readMagickImage(info$frame$image)
-  frame <- image_composite(
-    image,
-    positive,
-    operator = "CopyOpacity")
-  rm(positive,image);gc()
-  page <- image_composite(
-    page,
-    frame,
-    operator="over")
-  rm(frame);gc()
+  cat("adding", info$aboveGutter, "...\n")
+  composeOver(info$aboveGutter, tmpPagePath, tmpPagePath)
 
-  page <- image_composite(
-    page,
-    readMagickImage(info$aboveGutter),
-    operator="over")
-  gc()
+  cat("creating output file", info$out, "...\n")
+  setImageMeta(tmpPagePath, dpi=info$dpi)
+  file.rename(tmpPagePath, info$out)
 
-  writeMagickImage(page, info$out)
-  rm(page);gc()
-
+  cat("Done.\n")
   return(invisible())
+}
+
+createCutout <- function(positive, image, outPath) {
+  sprintf(
+    "magick composite -compose copy-opacity %s %s %s",
+    positive,
+    image,
+    outPath
+  ) |>
+    system()
+}
+
+composeOver <- function(top, bottom, out) {
+  sprintf(
+    "magick composite -compose over %s %s %s",
+    top,
+    bottom,
+    out
+  ) |>
+    system()
 }
