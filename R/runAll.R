@@ -16,6 +16,17 @@ runAll <- function(path = ".") {
   }
 }
 
+removeAll <- function(path = ".") {
+  wd <- getwd()
+  on.exit(setwd(wd))
+  folders <- list.dirs(path) |> normalizePath(winslash="/")
+  for (folder in folders) {
+    print(folder)
+    setwd(folder)
+    removeHere()
+  }
+}
+
 removeHere <- function() {
   tiffs <- c(
     "_[0-9]{3}_image",

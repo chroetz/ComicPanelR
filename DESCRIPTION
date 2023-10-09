@@ -21,4 +21,5 @@ Imports:
     stringr,
     tibble,
     tidyr,
+    tiff,
     wk

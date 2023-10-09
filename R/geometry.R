@@ -9,6 +9,20 @@ convertCmToPx <- function(len, dpi) {
   round(len * dpi / .cmPerInch)
 }
 
+convertBoxCmToDataPx <- function(box, geometry, dpi, bleedSide = TRUE) {
+  makeBox(
+    x = convertCmToPx(box$x + geometry$bleed$left, dpi),
+    y = convertCmToPx(box$y + geometry$bleed$top, dpi),
+    w = convertCmToPx(
+      box$w +
+        if (bleedSide) geometry$bleed$left + geometry$bleed$right else 0,
+      dpi),
+    h = convertCmToPx(
+      box$h +
+        if (bleedSide) geometry$bleed$top + geometry$bleed$bottom else 0,
+      dpi))
+}
+
 getDataWidthInCm <- function(geometry) {
   geometry$size$width + geometry$bleed$left + geometry$bleed$right
 }

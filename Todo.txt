@@ -13,9 +13,10 @@
 	o allow to extrapolate lines border lines linearly when calculating panel margin
 * Effect:
 	- ToPageEnd: allow to extrapolate lines linearly instead of just putting coorinates to end
+	- ToPageEnd: make user specify page side (r,t,l,b)
 * General:
 	o allow suffix "a" to be used for "a1" and "a2"
-	- allow overwrite name in later steps
+	- !allow overwrite name in later steps -> makes multiple render examples in same folder possible
 	- does Remove effect introduce problems??
 	- circular panel 
 	- bleed and side margin and safety as stencils?
