@@ -53,7 +53,7 @@ merge <- function(info, until = NULL, outPath = NULL) {
   cat("adding", info$aboveGutter, "...\n")
   composeOver(info$aboveGutter, tmpPagePath, tmpPagePath)
 
-  finalizeMerge()
+  finalizeMerge(tmpPagePath, info, outPath)
   return(invisible())
 }
 
