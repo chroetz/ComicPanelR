@@ -18,7 +18,6 @@ writeMagickImage <- function(img, fileName, dpi=NULL) {
     compression = "Zip",
     density = dpi)
   rm(img);gc()
-  setImageMeta(fileName, dpi)
   return(invisible())
 }
 
