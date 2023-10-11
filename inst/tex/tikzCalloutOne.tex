@@ -1,0 +1,60 @@
+\documentclass{article}
+\usepackage[papersize={~wTot~cm,~hTot~cm},margin=0pt,showframe]{geometry}
+\usepackage{fontspec}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\pagestyle{empty}
+\setlength{\parskip}{0pt}
+\setlength{\topskip}{0pt}
+\setlength{\parindent}{0pt}
+\setmainfont{Arial}
+\tikzset{every picture/.style={/utils/exec={\sffamily}}}
+
+\definecolor{colTextBoxBg}{HTML}{FFE97F}
+\def\bleed{~bleed~}
+\def\widthCm{~wInner~}
+\def\heightCm{~hInner~}
+
+\tikzset{
+	narration/.style={
+		draw = black,
+		line width = 0.5mm,
+		text = black,
+		fill = colTextBoxBg,
+		font = \fontsize{9pt}{11pt}\selectfont,
+	},
+	speechText/.style={
+		text = black,
+		font = \fontsize{9pt}{11pt}\selectfont,
+	},
+	speechEllipse/.style={
+		draw = black,
+		fill = white,
+		line width = 0.5mm,
+	},
+}
+
+\begin{document}%
+	\begin{tikzpicture}[remember picture, overlay]%
+		\node at (current page.center) {\includegraphics[width=\paperwidth,height=\paperheight]{~image~}};
+	\end{tikzpicture}%
+	\begin{tikzpicture}[remember picture, overlay, y=-1cm, shift={(\bleed cm, -\bleed cm)}]%
+		~main~
+	\end{tikzpicture}%
+	\begin{tikzpicture}[remember picture, overlay]%
+		\node at (current page.center) {\includegraphics[width=\paperwidth,height=\paperheight]{~negative~}};
+	\end{tikzpicture}%
+%	\begin{tikzpicture}[remember picture, overlay, y=-1cm, shift={(0.3cm, -0.3cm)}]%
+%		\fill[red] (-\bleed, -\bleed) rectangle ++(\bleed, \heightCm+2*\bleed);
+%		\fill[red] (-\bleed, -\bleed) rectangle ++(\widthCm+2*\bleed, \bleed);
+%		\fill[red] (-\bleed, \heightCm) rectangle ++(\widthCm+2*\bleed, \bleed);
+%		\fill[red] (\widthCm, -\bleed) rectangle ++(\bleed, \heightCm+2*\bleed);
+%		\draw[help lines,xstep=1cm,ystep=1cm] (0,0) grid (\widthCm,\heightCm);
+%		\foreach \x in {0,1,...,\widthCm} {
+%			\foreach \y in {0,1,...,\heightCm} {
+%				\node [anchor=north west] at (\x,\y) {{\tiny\x,\y}}; 
+%			}
+%		}
+%	\end{tikzpicture}%
+\end{document}

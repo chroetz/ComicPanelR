@@ -1,12 +1,13 @@
-.cmPerInch <- 2.54
-
-.sideToIndex <- c(right = 1, top = 2, left = 3, bottom = 4)
-.sideLetterToIndex <- c(r = 1, t = 2, l = 3, b = 4)
-.indexToSide <- c("right", "top", "left", "bottom")
-.indexToSideLetter <- c("r", "t", "l", "b")
-
 convertCmToPx <- function(len, dpi) {
   round(len * dpi / .cmPerInch)
+}
+
+convertDataPxCoorToFinalCmCoor <- function(coor, dpi, geometry) {
+  coor / dpi * .cmPerInch - c(geometry$bleed$left, geometry$bleed$top)
+}
+
+convertFinalCmCoorToDataPxCoor <- function(coor, dpi, geometry) {
+  (coor + c(geometry$bleed$left, geometry$bleed$top)) * dpi / .cmPerInch
 }
 
 convertBoxCmToDataPx <- function(box, geometry, dpi, bleedSide = TRUE) {

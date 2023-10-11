@@ -1,0 +1,46 @@
+\documentclass{article}
+\usepackage[papersize={~wTot~cm,~hTot~cm},margin=0pt,showframe]{geometry}
+\usepackage{fontspec}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\pagestyle{empty}
+\setlength{\parskip}{0pt}
+\setlength{\topskip}{0pt}
+\setlength{\parindent}{0pt}
+\setmainfont{Arial}
+\tikzset{every picture/.style={/utils/exec={\sffamily}}}
+
+\definecolor{colTextBoxBg}{HTML}{FFE97F}
+\def\bleed{~bleed~}
+
+\tikzset{
+	narration/.style={
+		draw = black,
+		line width = 0.5mm,
+		text = black,
+		fill = colTextBoxBg,
+		font = \fontsize{9pt}{11pt}\selectfont,
+	},
+	speechText/.style={
+		text = black,
+		font = \fontsize{9pt}{11pt}\selectfont,
+	},
+	speechEllipse/.style={
+		draw = black,
+		fill = white,
+		line width = 0.5mm,
+	},
+}
+
+\begin{document}%
+	\begin{tikzpicture}[remember picture, overlay]%
+		\node at (current page.center) {\includegraphics[width=\paperwidth,height=\paperheight]{~imageBelow~}};
+	\end{tikzpicture}%
+	\begin{tikzpicture}[remember picture, overlay, y=-1cm, shift={(\bleed cm, -\bleed cm)}]%
+		~main~
+	\end{tikzpicture}%
+	\begin{tikzpicture}[remember picture, overlay]%
+		\node at (current page.center) {\includegraphics[width=\paperwidth,height=\paperheight]{~imageAbove~}};
+	\end{tikzpicture}%
+\end{document}

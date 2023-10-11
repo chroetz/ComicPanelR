@@ -12,7 +12,7 @@ createMergedOne <- function(fileInMerge) {
   merge(mergeInfo)
 }
 
-merge <- function(info) {
+merge <- function(info, until = NULL, outPath = NULL) {
 
   tmpPagePath <- tempfile(fileext = ".tiff")
 
@@ -35,6 +35,11 @@ merge <- function(info) {
   cat("adding", info$belowGutter, "...\n")
   composeOver(info$belowGutter, tmpPagePath, tmpPagePath)
 
+  if (identical(until, "belowGutter")) {
+    finalizeMerge(tmpPagePath, info, outPath)
+    return(invisible())
+  }
+
   cat("adding", info$gutter$image, "...\n")
   tmpGutterPath <- tempfile(fileext = ".tiff")
   createCutout(info$gutter$positive, info$gutter$image, tmpGutterPath)
@@ -48,30 +53,52 @@ merge <- function(info) {
   cat("adding", info$aboveGutter, "...\n")
   composeOver(info$aboveGutter, tmpPagePath, tmpPagePath)
 
-  cat("creating output file", info$out, "...\n")
-  setImageMeta(tmpPagePath, dpi=info$dpi)
-  file.rename(tmpPagePath, info$out)
-
-  cat("Done.\n")
+  finalizeMerge()
   return(invisible())
 }
 
-createCutout <- function(positive, image, outPath) {
-  sprintf(
-    "magick composite -compose copy-opacity %s %s %s",
-    positive,
-    image,
-    outPath
-  ) |>
-    system()
+
+createGutterAndAbove <- function(info, outPath = NULL) {
+
+  tmpPagePath <- tempfile(fileext = ".tiff")
+
+  cat("creating blank canvas ...\n")
+  createBlank(
+    '"#00000000"',
+    info$width,
+    info$height,
+    dpi = info$dpi,
+    fileName = tmpPagePath,
+    overwrite = TRUE)
+
+  cat("adding", info$gutter$image, "...\n")
+  tmpGutterPath <- tempfile(fileext = ".tiff")
+  createCutout(info$gutter$positive, info$gutter$image, tmpGutterPath)
+  composeOver(tmpGutterPath, tmpPagePath, tmpPagePath)
+
+  cat("adding", info$frame$image, "...\n")
+  tmpFramePath <- tempfile(fileext = ".tiff")
+  createCutout(info$frame$positive, info$frame$image, tmpFramePath)
+  composeOver(tmpFramePath, tmpPagePath, tmpPagePath)
+
+  cat("adding", info$aboveGutter, "...\n")
+  composeOver(info$aboveGutter, tmpPagePath, tmpPagePath)
+
+  finalizeMerge(tmpPagePath, info, outPath)
+  return(invisible())
 }
 
-composeOver <- function(top, bottom, out) {
-  sprintf(
-    "magick composite -compose over %s %s %s",
-    top,
-    bottom,
-    out
-  ) |>
-    system()
+
+finalizeMerge <- function(tmpPagePath, info, outPath=NULL) {
+  setImageMeta(tmpPagePath, dpi=info$dpi)
+  if (!is.null(outPath)) {
+    cat("creating output file", outPath, "...\n")
+    file.rename(tmpPagePath, outPath)
+  } else {
+    cat("creating output file", info$out, "...\n")
+    file.rename(tmpPagePath, info$out)
+  }
+
+  cat("Done.\n")
+  return(invisible())
 }

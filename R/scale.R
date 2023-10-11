@@ -1,5 +1,3 @@
-.formatString <- "-colorspace CMYK -compress Zip"
-
 resizeImage <- function(
     pathDrawn,
     pathNegative,
