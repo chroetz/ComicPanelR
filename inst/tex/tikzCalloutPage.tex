@@ -12,6 +12,8 @@
 \tikzset{every picture/.style={/utils/exec={\sffamily}}}
 
 \definecolor{colTextBoxBg}{HTML}{FFE97F}
+\definecolor{colTextComputer}{HTML}{4CFF00}
+
 \def\bleed{~bleed~}
 
 \tikzset{
@@ -21,6 +23,10 @@
 		text = black,
 		fill = colTextBoxBg,
 		font = \fontsize{9pt}{11pt}\selectfont,
+	},
+	computer/.style={
+		text = colTextComputer,
+		font = \ttfamily\fontsize{9pt}{11pt}\selectfont,
 	},
 	speechText/.style={
 		text = black,

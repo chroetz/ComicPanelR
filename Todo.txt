@@ -1,3 +1,6 @@
+* interactive:
+	- create user dialog to choose, e.g., resize panel 3
+
 * Deco:
 	- sine
 		+ time -> frequency

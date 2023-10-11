@@ -1,3 +1,62 @@
+#' @export
+runResize <- function(nr = NULL) {
+
+  opts <- jsonlite::read_json("resize.json")
+  panAndPanels <- readRDS("store_05_panels-effect.RDS")
+  render <- ConfigOpts::readOpts("opt_06_render.json", c("Render"))
+
+  for (resizeOpts in opts$panels) {
+
+    if (!is.null(nr)) if (resizeOpts$panelNr != nr) next
+
+    prefix <- sprintf("Ch%dPage%02d_%03d", opts$chapterNr, opts$pageNr, resizeOpts$panelNr)
+    innerBorder <- panAndPanels$panels |> filter(panelId == resizeOpts$panelNr) |> pull(inner)
+
+    cat(prefix, "... ")
+
+    resizeImage(
+      pathDrawn = resizeOpts$path,
+      pathNegative = paste0(prefix, "_negative.tiff"),
+      pathMasked = paste0(prefix, "_masked.tiff"),
+      pathOut = paste0(prefix, "_image.tiff"),
+      scale = resizeOpts$scale,
+      xOff = resizeOpts$xOff,
+      yOff = resizeOpts$yOff,
+      reformat = resizeOpts$reformat,
+      dpi = render$dpi,
+      geo = panAndPanels$pan$geometry,
+      innerBorder = innerBorder)
+
+    cat("ok \n")
+  }
+
+  if (!is.null(opts$gutter) && (is.null(nr) || "gutter" == nr)) {
+
+    cat("gutter ... ")
+
+    resizeOpts <- opts$gutter
+    prefix <- sprintf("Ch%dPage%02d_gutter", opts$chapterNr, opts$pageNr)
+    resizeImage(
+      pathDrawn = resizeOpts$path,
+      pathNegative = paste0(prefix, "_negative.tiff"),
+      pathMasked = paste0(prefix, "_masked.tiff"),
+      pathOut = paste0(prefix, "_image.tiff"),
+      scale = 1,
+      xOff = 0,
+      yOff = 0,
+      reformat = resizeOpts$reformat,
+      dpi = render$dpi,
+      geo = panAndPanels$pan$geometry,
+      innerBorder = NULL,
+      fitExactly = TRUE)
+
+    cat("ok \n")
+  }
+
+  cat("Done. \n")
+}
+
+
 resizeImage <- function(
     pathDrawn,
     pathNegative,

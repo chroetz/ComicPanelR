@@ -12,8 +12,44 @@ getPanelBoxFromPanels <- function(panels, panelNr) {
 }
 
 
+getTikzPanelPath <- function(panels, panelNr) {
+  innerBorder <- panels |>
+    filter(.data$panelId == .env$panelNr) |>
+    pull(inner)
+  v <- do.call(rbind, innerBorder)
+  tikz <- coordsToTikzPath(removeDuplicates(v))
+  return(tikz)
+}
+
+
+removeDuplicates <- function(x) {
+  if (!is.matrix(x)) return(x)
+  n <- nrow(x)
+  if (n <= 1) return(x)
+  delta <- sqrt(rowSums((x-x[c(2:n,1),])^2))
+  x[delta >= 10e-12,]
+}
+
+
+coordsToTikzPath <- function(points) {
+  paste0(
+    paste0("(", points[,1], ",", points[,2], ")", collapse="--"),
+    "--cycle;"
+  )
+}
+
+
+readTextOpt <- function(filePath) {
+  jsonlite::read_json(
+    filePath,
+    simplifyVector = TRUE,
+    simplifyDataFrame = FALSE,
+    simplifyMatrix = FALSE)
+}
+
+
 renderPageCallout <- function() {
-  opts <- jsonlite::read_json("text.json")
+  opts <- readTextOpt("text.json")
   panAndPanels <- readRDS(opts$panAndPanel)
   render <- ConfigOpts::readOpts(opts$renderOpts, c("Render"))
   info <- jsonlite::read_json("mergeinfo.json")
@@ -30,7 +66,22 @@ renderPageCallout <- function() {
     opts$texts,
     getTextRenderData,
     panels = panAndPanels$panels)
-  content <- paste0(textRenderData, collapse="\n%\n")
+
+  panelIds <- panAndPanels$panels$panelId |> unique()
+
+  panelTikzPath <- sapply(panelIds, getTikzPanelPath, panels = panAndPanels$panels)
+  stopifnot(panelIds == seq_along(panelIds))
+
+  content <- ""
+  for (panelId in panelIds) {
+    content <- paste0(content, "\\begin{scope}\n\\clip ", panelTikzPath[panelId], "\n")
+    for (i in seq_along(opts$texts)) {
+      textOpt <- opts$texts[[i]]
+      if (textOpt$panelNr != panelId) next
+      content <- paste0(content, textRenderData[i], "\n")
+    }
+    content <- paste0(content, "\\end{scope}\n")
+  }
 
   merge(info, until="belowGutter", "tmp/mergedBelowGutter.tiff")
   createGutterAndAbove(info, "tmp/mergedGutterAndAbove.tiff")
@@ -57,23 +108,18 @@ renderPageCallout <- function() {
 }
 
 
-
 getTextRenderData <- function(textOpt, panels) {
 
   panelBox <- getPanelBoxFromPanels(panels,  textOpt$panelNr)
 
-  content <- switch (
-    textOpt$kind,
-    narration = createTextBox(textOpt, panelBox),
-    speech = createCallout(textOpt, panelBox)
-  )
+  content <- createTikzContent(textOpt, panelBox)
 
   return(content)
 }
 
 
 renderCalloutOne <- function(nr) {
-  opts <- jsonlite::read_json("text.json")
+  opts <- readTextOpt("text.json")
   panAndPanels <- readRDS(opts$panAndPanel)
   render <- ConfigOpts::readOpts(opts$renderOpts, c("Render"))
 
@@ -130,11 +176,7 @@ renderCalloutOne <- function(nr) {
     getDataWidthInPx(geo, dpi),
     getDataHeightInPx(geo, dpi))
 
-  content <- switch (
-    textOpt$kind,
-    narration = createTextBox(textOpt, panelBox),
-    speech = createCallout(textOpt, panelBox)
-  )
+  content <- createTikzContent(textOpt, panelBox)
 
   vars <- list(
     wTot = dataBox$w,
@@ -151,52 +193,75 @@ renderCalloutOne <- function(nr) {
 }
 
 
+createTikzContent <- function(textOpt, panelBox) {
+  content <- switch(
+    textOpt$kind,
+    narration = createTextBox(textOpt, panelBox),
+    speech = createCallout(textOpt, panelBox),
+    computer = createTextBox(textOpt, panelBox)
+  )
+  return(content)
+}
+
+
+getFromPostionString <- function(posStr, panelBox) {
+  stopifnot(is.character(posStr))
+  nodeOpt <- list()
+  switch(
+    posStr,
+    "topright" = {
+      nodeOpt$anchor <- "north east"
+      nodeOpt$align <- "right"
+      coordinate <- c(panelBox$right, panelBox$top)
+    },
+    "top" = {
+      nodeOpt$anchor <- "north"
+      nodeOpt$align <- "center"
+      coordinate <- c(panelBox$midX, panelBox$top)
+    },
+    "topleft" = {
+      nodeOpt$anchor <- "north west"
+      nodeOpt$align <- "left"
+      coordinate <- c(panelBox$left, panelBox$top)
+    },
+    "bottomleft" = {
+      nodeOpt$anchor <- "south west"
+      nodeOpt$align <- "left"
+      coordinate <- c(panelBox$left, panelBox$bottom)
+    },
+    "bottom" = {
+      nodeOpt$anchor <- "south"
+      nodeOpt$align <- "center"
+      coordinate <- c(panelBox$midX, panelBox$bottom)
+    },
+    "bottomright" = {
+      nodeOpt$anchor <- "south east"
+      nodeOpt$align <- "right"
+      coordinate <- c(panelBox$right, panelBox$bottom)
+    },
+    "right" = {
+      nodeOpt$anchor <- "east"
+      nodeOpt$align <- "right"
+      coordinate <- c(panelBox$right, panelBox$midY)
+    },
+    "left" = {
+      nodeOpt$anchor <- "west"
+      nodeOpt$align <- "left"
+      coordinate <- c(panelBox$left, panelBox$midY)
+    },
+    stop("Unknown postition ", posStr)
+  )
+  return(list(nodeOpt = nodeOpt, coor = coordinate))
+}
+
+
 createTextBox <- function(opt, panelBox) {
   nodeOpt <- list()
   if (is.character(opt$position)) {
-    switch(
-      opt$position,
-      "topright" = {
-        nodeOpt$anchor <- "north east"
-        nodeOpt$align <- "right"
-        coordinate <- c(panelBox$right, panelBox$top)
-      },
-      "top" = {
-        nodeOpt$anchor <- "north"
-        nodeOpt$align <- "center"
-        coordinate <- c(panelBox$midX, panelBox$top)
-      },
-      "leftright" = {
-        nodeOpt$anchor <- "north west"
-        nodeOpt$align <- "left"
-        coordinate <- c(panelBox$left, panelBox$top)
-      },
-      "bottomleft" = {
-        nodeOpt$anchor <- "south west"
-        nodeOpt$align <- "left"
-        coordinate <- c(panelBox$left, panelBox$bottom)
-      },
-      "bottom" = {
-        nodeOpt$anchor <- "south"
-        nodeOpt$align <- "center"
-        coordinate <- c(panelBox$midX, panelBox$bottom)
-      },
-      "bottomright" = {
-        nodeOpt$anchor <- "south east"
-        nodeOpt$align <- "right"
-        coordinate <- c(panelBox$right, panelBox$bottom)
-      },
-      "right" = {
-        nodeOpt$anchor <- "east"
-        nodeOpt$align <- "right"
-        coordinate <- c(panelBox$right, panelBox$midY)
-      },
-      "left" = {
-        nodeOpt$anchor <- "west"
-        nodeOpt$align <- "left"
-        coordinate <- c(panelBox$left, panelBox$midY)
-      }
-    )
+    posInfo <- getFromPostionString(opt$position, panelBox)
+    nodeOpt <- posInfo$nodeOpt
+  } else {
+    stop()
   }
   if (!is.null(opt$width)) nodeOpt[["text width"]] <- paste0(opt$width, "cm")
   if (!is.null(opt$height)) nodeOpt[["text height"]] <- paste0(opt$height, "cm")
@@ -204,7 +269,7 @@ createTextBox <- function(opt, panelBox) {
     r"(\node[)",
     opt$kind, ", ",
     paste0(names(nodeOpt), "=", unlist(nodeOpt),collapse=", "),
-    str_glue(r"(] at ({coordinate[1]},{coordinate[2]}) {{{opt$text}}};)"))
+    str_glue(r"(] at ({posInfo$coor[1]},{posInfo$coor[2]}) {{{opt$text}}};)"))
   return(tikz)
 }
 
@@ -317,8 +382,15 @@ createCallout <- function(opt, panelBox, innerSep=0.2) {
       nodeOpt$anchor <- "west"
       nodeOpt$align <- "right"
       pos <- c(panelBox$w, panelBox$h/2)
-    }
+    },
+    stop("Unknown position ", opt$position)
   )
+  if (!is.null(opt$shift)) {
+    pos <- pos + opt$shift
+    ranges$x <- ranges$x + opt$shift[1]
+    ranges$y <- ranges$y + opt$shift[2]
+    rects <- geos_transform_xy(rects, wk::wk_affine_translate(opt$shift[1],opt$shift[2]))
+  }
   poly <- geos_unary_union(geos_make_collection(rects))
   par <- optimizeEllipse(ranges, panel, poly)
   bubble <- makeEllipse(par[1], par[2], par[3], par[4])
@@ -344,8 +416,7 @@ createCallout <- function(opt, panelBox, innerSep=0.2) {
     bubbleIndiCoords$y + panelBox$y)
   tikzElli <- paste0(
     r"(\draw[speechEllipse] )",
-    paste0("(", finalCoords[,1], ",", finalCoords[,2], ")", collapse="--"),
-    "--cycle;"
+    coordsToTikzPath(finalCoords)
   )
   text <- str_replace_all(opt$text, "\\n", r"(\\\\)")
   tikzText <- str_glue(
