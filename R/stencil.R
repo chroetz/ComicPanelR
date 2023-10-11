@@ -49,13 +49,13 @@ panel2stencil <- function(panels, pan, frameStyles, dpi, fileOutMerge) {
   createPageStencils(p, pan, dpi, filePrefix)
   gc()
 
-  createBlank("#FFFFFFFF", pan, dpi, sprintf("%s_gutter_image.tiff", pan$name))
-  createBlank("#000000FF", pan, dpi, sprintf("%s_frame_image.tiff", pan$name))
-  createBlank("#00000000", pan, dpi, sprintf("%s_abovegutter_image.tiff", pan$name))
-  createBlank("#00000000", pan, dpi, sprintf("%s_belowgutter_image.tiff", pan$name))
+  createBlankPan("#FFFFFFFF", pan, dpi, sprintf("%s_gutter_image.tiff", pan$name))
+  createBlankPan("#000000FF", pan, dpi, sprintf("%s_frame_image.tiff", pan$name))
+  createBlankPan("#00000000", pan, dpi, sprintf("%s_abovegutter_image.tiff", pan$name))
+  createBlankPan("#00000000", pan, dpi, sprintf("%s_belowgutter_image.tiff", pan$name))
   colors <- getPanelColors(n, alpha=1)
   for (i in seq_len(n)) {
-    createBlank(colors[i], pan, dpi, sprintf("%s_%03d_image.tiff", pan$name, i))
+    createBlankPan(colors[i], pan, dpi, sprintf("%s_%03d_image.tiff", pan$name, i))
   }
 
   createMergeInfo(panels, pan, dpi, fileOutMerge)
