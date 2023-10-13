@@ -196,9 +196,11 @@ renderCalloutOne <- function(nr) {
 createTikzContent <- function(textOpt, panelBox) {
   content <- switch(
     textOpt$kind,
-    narration = createTextBox(textOpt, panelBox),
-    speech = createCallout(textOpt, panelBox),
-    computer = createTextBox(textOpt, panelBox)
+    narration = ,
+    computer = createTextBox(textOpt, panelBox),
+    speech = ,
+    whisper = ,
+    thought = createCallout(textOpt, panelBox)
   )
   return(content)
 }
@@ -280,11 +282,6 @@ createCallout <- function(opt, panelBox, innerSep=0.2) {
   lineHeight <- 11 * .cmPerPt
   panel <- geos_create_rectangle(0, 0, panelBox$w, panelBox$h)
   nodeOpt <- list()
-  ranges <- list(
-    x = NULL,
-    y = NULL,
-    rx = c(max(textWidth)/2, panelBox$w),
-    ry = c(max(lineHeight)/2, panelBox$h))
   switch(
     opt$position,
     "topleft" = {
@@ -293,8 +290,6 @@ createCallout <- function(opt, panelBox, innerSep=0.2) {
         (seq_along(textWidth)-1)*lineHeight,
         textWidth,
         seq_along(textWidth)*lineHeight)
-      ranges$x <- c(0, panelBox$w/2)
-      ranges$y <- c(0, panelBox$h/2)
       nodeOpt$anchor <- "north west"
       nodeOpt$align <- "left"
       pos <- c(0, 0)
@@ -305,8 +300,6 @@ createCallout <- function(opt, panelBox, innerSep=0.2) {
         (seq_along(textWidth)-1)*lineHeight,
         panelBox$w/2+textWidth/2,
         seq_along(textWidth)*lineHeight)
-      ranges$x <- c(panelBox$w/2-1e-7, panelBox$w/2+1e-7)
-      ranges$y <- c(0, panelBox$h/2)
       nodeOpt$anchor <- "north"
       nodeOpt$align <- "center"
       pos <- c(panelBox$w/2, 0)
@@ -317,8 +310,6 @@ createCallout <- function(opt, panelBox, innerSep=0.2) {
         (seq_along(textWidth)-1)*lineHeight,
         panelBox$w,
         seq_along(textWidth)*lineHeight)
-      ranges$x <- c(panelBox$w/2, panelBox$w)
-      ranges$y <- c(0, panelBox$h/2)
       nodeOpt$anchor <- "north east"
       nodeOpt$align <- "right"
       pos <- c(panelBox$w, 0)
@@ -329,8 +320,6 @@ createCallout <- function(opt, panelBox, innerSep=0.2) {
         panelBox$h+(-length(textWidth)+seq_along(textWidth)-1)*lineHeight,
         textWidth,
         panelBox$h+(-length(textWidth)+seq_along(textWidth))*lineHeight)
-      ranges$x <- c(0, panelBox$w/2)
-      ranges$y <- c(panelBox$h/2, panelBox$h)
       nodeOpt$anchor <- "south west"
       nodeOpt$align <- "left"
       pos <- c(0, panelBox$h)
@@ -341,8 +330,6 @@ createCallout <- function(opt, panelBox, innerSep=0.2) {
         panelBox$h+(-length(textWidth)+seq_along(textWidth)-1)*lineHeight,
         panelBox$w/2+textWidth/2,
         panelBox$h+(-length(textWidth)+seq_along(textWidth))*lineHeight)
-      ranges$x <- c(panelBox$w/2-1e-7, panelBox$w/2+1e-7)
-      ranges$y <- c(panelBox$h/2, panelBox$h)
       nodeOpt$anchor <- "south"
       nodeOpt$align <- "center"
       pos <- c(panelBox$w/2, panelBox$h)
@@ -353,8 +340,6 @@ createCallout <- function(opt, panelBox, innerSep=0.2) {
         panelBox$h+(-length(textWidth)+seq_along(textWidth)-1)*lineHeight,
         panelBox$w,
         panelBox$h+(-length(textWidth)+seq_along(textWidth))*lineHeight)
-      ranges$x <- c(panelBox$w/2, panelBox$w)
-      ranges$y <- c(panelBox$h/2, panelBox$h)
       nodeOpt$anchor <- "south east"
       nodeOpt$align <- "right"
       pos <- c(panelBox$w, panelBox$h)
@@ -365,9 +350,7 @@ createCallout <- function(opt, panelBox, innerSep=0.2) {
         panelBox$h/2+(-length(textWidth)/2+seq_along(textWidth)-1)*lineHeight,
         textWidth,
         panelBox$h/2+(-length(textWidth)/2+seq_along(textWidth))*lineHeight)
-      ranges$x <- c(0, panelBox$w/2)
-      ranges$y <- c(panelBox$h/4, 3*panelBox$h/4)
-      nodeOpt$anchor <- "east"
+      nodeOpt$anchor <- "west"
       nodeOpt$align <- "left"
       pos <- c(0, panelBox$h/2)
     },
@@ -377,22 +360,28 @@ createCallout <- function(opt, panelBox, innerSep=0.2) {
         panelBox$h/2+(-length(textWidth)/2+seq_along(textWidth)-1)*lineHeight,
         panelBox$w,
         panelBox$h/2+(-length(textWidth)/2+seq_along(textWidth))*lineHeight)
-      ranges$x <- c(panelBox$w/2, panelBox$w)
-      ranges$y <- c(panelBox$h/4, 3*panelBox$h/4)
-      nodeOpt$anchor <- "west"
+      nodeOpt$anchor <- "east"
       nodeOpt$align <- "right"
       pos <- c(panelBox$w, panelBox$h/2)
+    },
+    "center" = {
+      rects <- geos_create_rectangle(
+        panelBox$w/2-textWidth/2,
+        panelBox$h/2+(-length(textWidth)/2+seq_along(textWidth)-1)*lineHeight,
+        panelBox$w/2+textWidth/2,
+        panelBox$h/2+(-length(textWidth)/2+seq_along(textWidth))*lineHeight)
+      nodeOpt$anchor <- "center"
+      nodeOpt$align <- "center"
+      pos <- c(panelBox$w/2, panelBox$h/2)
     },
     stop("Unknown position ", opt$position)
   )
   if (!is.null(opt$shift)) {
     pos <- pos + opt$shift
-    ranges$x <- ranges$x + opt$shift[1]
-    ranges$y <- ranges$y + opt$shift[2]
     rects <- geos_transform_xy(rects, wk::wk_affine_translate(opt$shift[1],opt$shift[2]))
   }
   poly <- geos_unary_union(geos_make_collection(rects))
-  par <- optimizeEllipse(ranges, panel, poly)
+  par <- optimizeEllipse(panel, poly)
   bubble <- makeEllipse(par[1], par[2], par[3], par[4])
   bubbleBuffed <- geos_buffer(bubble, distance = innerSep)
   indiFrom <- c(
@@ -415,12 +404,12 @@ createCallout <- function(opt, panelBox, innerSep=0.2) {
     bubbleIndiCoords$x + panelBox$x,
     bubbleIndiCoords$y + panelBox$y)
   tikzElli <- paste0(
-    r"(\draw[speechEllipse] )",
+    sprintf(r"(\draw[%sEllipse] )", opt$kind),
     coordsToTikzPath(finalCoords)
   )
   text <- str_replace_all(opt$text, "\\n", r"(\\\\)")
   tikzText <- str_glue(
-    r"(\node[speechText,)",
+    sprintf(r"(\node[%sText,)", opt$kind),
     paste0(names(nodeOpt), "=", unlist(nodeOpt),collapse=", "),
     r"(] at ({pos[1]+panelBox$x},{pos[2]+panelBox$y}) {{{text}}};)")
   return(paste(tikzElli, tikzText, sep="\n"))
