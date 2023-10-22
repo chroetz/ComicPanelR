@@ -55,6 +55,7 @@ renderPageCallout <- function() {
   render <- ConfigOpts::readOpts(opts$renderOpts, c("Render"))
   info <- jsonlite::read_json("opt_08_merge.json")
 
+  fontOpts <- opts[c("font", "fontSizePt", "lineHeightPt", "innerSep")]
   geo <- panAndPanels$pan$geometry
   dataBox <- getDataBoxInCm(geo)
   finalBox <- getFinalBoxInCm(geo)
@@ -66,7 +67,8 @@ renderPageCallout <- function() {
   textRenderData <- sapply(
     opts$texts,
     getTextRenderData,
-    panels = panAndPanels$panels)
+    panels = panAndPanels$panels,
+    fontOpts = fontOpts)
 
   panelIds <- panAndPanels$panels$panelId |> unique()
 
@@ -96,6 +98,9 @@ renderPageCallout <- function() {
     hInner = finalBox$h,
     imageBelow = sprintf("../%s_merged_below.pdf", info$name),
     imageAbove = sprintf("../%s_merged_above.pdf", info$name),
+    font = opts$font,
+    fontSizePt = opts$fontSizePt,
+    lineHeightPt = opts$lineHeightPt,
     main = content)
   writeTemplate(vars, "page.tex", getTikzCalloutPagePath())
 
@@ -105,11 +110,11 @@ renderPageCallout <- function() {
 }
 
 
-getTextRenderData <- function(textOpt, panels) {
+getTextRenderData <- function(textOpt, panels, fontOpts) {
 
   panelBox <- getPanelBoxFromPanels(panels,  textOpt$panelNr)
 
-  content <- createTikzContent(textOpt, panelBox)
+  content <- createTikzContent(textOpt, panelBox, fontOpts)
 
   return(content)
 }
@@ -120,15 +125,15 @@ renderCalloutOne <- function(nr) {
   panAndPanels <- readRDS(opts$panAndPanel)
   render <- ConfigOpts::readOpts(opts$renderOpts, c("Render"))
 
-  textOpt <- opts$texts[[nr]]
+  panelNr <- opts$texts[[nr]]$panelNr
 
-  panelBox <- getPanelBoxFromPanels(panAndPanels$panels,  textOpt$panelNr)
+  panelBox <- getPanelBoxFromPanels(panAndPanels$panels,  panelNr)
 
   pathPanelImage <-
-    sprintf("%s_%03d_image.tiff", opts$name, textOpt$panelNr) |>
+    sprintf("%s_%03d_image.tiff", opts$name, panelNr) |>
     normalizePath(mustWork = TRUE)
   pathPanelNegative <-
-    sprintf("%s_%03d_negative.tiff", opts$name, textOpt$panelNr) |>
+    sprintf("%s_%03d_negative.tiff", opts$name, panelNr) |>
     normalizePath(mustWork = TRUE)
 
   wd <- getwd()
@@ -142,7 +147,8 @@ renderCalloutOne <- function(nr) {
     geo = panAndPanels$pan$geometry,
     dpi = render$dpi/5,
     panelBox = panelBox,
-    textOpt = textOpt
+    textOpt = opts$texts[[nr]],
+    fontOpts = opts[c("font", "fontSizePt", "lineHeightPt", "innerSep")]
   )
 }
 
@@ -153,7 +159,8 @@ renderCalloutOne <- function(nr) {
     geo,
     dpi,
     panelBox,
-    textOpt
+    textOpt,
+    fontOpts
 ) {
 
   dataBox <- getDataBoxInCm(geo)
@@ -173,7 +180,7 @@ renderCalloutOne <- function(nr) {
     getDataWidthInPx(geo, dpi),
     getDataHeightInPx(geo, dpi))
 
-  content <- createTikzContent(textOpt, panelBox)
+  content <- createTikzContent(textOpt, panelBox, fontOpts)
 
   vars <- list(
     wTot = dataBox$w,
@@ -183,21 +190,25 @@ renderCalloutOne <- function(nr) {
     hInner = finalBox$h,
     imageBelow = "image.pdf",
     imageAbove = "negative.pdf",
+    font = opts$font,
+    fontSizePt = opts$fontSizePt,
+    lineHeightPt = opts$lineHeightPt,
     main = content)
+
   writeTemplate(vars, "panelCalloutOne.tex", getTikzCalloutOnePath())
 
   runLualatex("panelCalloutOne.tex", 2)
 }
 
 
-createTikzContent <- function(textOpt, panelBox) {
+createTikzContent <- function(textOpt, panelBox, fontOpts) {
   content <- switch(
     textOpt$kind,
     narration = ,
-    computer = createTextBox(textOpt, panelBox),
+    computer = createTextBox(textOpt, panelBox, fontOpts),
     speech = ,
     whisper = ,
-    thought = createCallout(textOpt, panelBox)
+    thought = createCallout(textOpt, panelBox, fontOpts)
   )
   return(content)
 }
@@ -254,7 +265,7 @@ getFromPostionString <- function(posStr, panelBox) {
 }
 
 
-createTextBox <- function(opt, panelBox) {
+createTextBox <- function(opt, panelBox, fontOpts) {
   nodeOpt <- list()
   if (is.character(opt$position)) {
     posInfo <- getFromPostionString(opt$position, panelBox)
@@ -273,15 +284,15 @@ createTextBox <- function(opt, panelBox) {
 }
 
 
-createCallout <- function(opt, panelBox, innerSep=0.1) {
-  textLines <- str_split_1(opt$text, "\n")
-  textLength <- getTextLengths(textLines)
+createCallout <- function(textOpt, panelBox, fontOpts) {
+  textLines <- str_split_1(textOpt$text, "\n")
+  textLength <- getTextLengths(textLines, textOpt, fontOpts)
   textWidth <- textLength |> filter(kind == "width") |> pull(length)
-  lineHeight <- 9 * .cmPerPt # TODO magic number!!
+  lineHeight <- fontOpts$lineHeightPt * .cmPerPt
   panel <- geos_create_rectangle(0, 0, panelBox$w, panelBox$h)
   nodeOpt <- list()
   switch(
-    opt$position,
+    textOpt$position,
     "topleft" = {
       rects <- geos_create_rectangle(
         0,
@@ -381,30 +392,35 @@ createCallout <- function(opt, panelBox, innerSep=0.1) {
       pos <- c(panelBox$w/2, panelBox$h/2)
       borderIndicator <- c(0, 0)
     },
-    stop("Unknown position ", opt$position)
+    stop("Unknown position ", textOpt$position)
   )
-  pos <- pos + innerSep * borderIndicator
-  rects <- geos_transform_xy(rects, wk::wk_affine_translate(innerSep * borderIndicator[1], innerSep * borderIndicator[2]))
-  if (!is.null(opt$shift)) {
-    pos <- pos + opt$shift
-    rects <- geos_transform_xy(rects, wk::wk_affine_translate(opt$shift[1],opt$shift[2]))
+  pos <- pos + fontOpts$innerSep * borderIndicator
+  rects <- geos_transform_xy(
+    rects,
+    wk::wk_affine_translate(
+      fontOpts$innerSep * borderIndicator[1],
+      fontOpts$innerSep * borderIndicator[2]))
+  if (!is.null(textOpt$shift)) {
+    pos <- pos + textOpt$shift
+    rects <- geos_transform_xy(
+      rects, wk::wk_affine_translate(textOpt$shift[1],textOpt$shift[2]))
   }
   textPolygon <- geos_unary_union(geos_make_collection(rects))
   par <- optimizeEllipse(panel, textPolygon)
   bubble <- makeEllipse(par[1], par[2], par[3], par[4])
-  bubbleBuffed <- geos_buffer(bubble, distance = innerSep)
+  bubbleBuffed <- geos_buffer(bubble, distance = fontOpts$innerSep)
   indiFrom <- c(
-    par[1] + cos(opt$indicator$fromAngle/180*pi)*par[3],
-    par[2] + sin(opt$indicator$fromAngle/180*pi)*par[4])
+    par[1] + cos(textOpt$indicator$fromAngle/180*pi)*par[3],
+    par[2] + sin(textOpt$indicator$fromAngle/180*pi)*par[4])
   indiTo <- c(
-    indiFrom[1] + cos(opt$indicator$toAngle/180*pi)*opt$indicator$length,
-    indiFrom[2] + sin(opt$indicator$toAngle/180*pi)*opt$indicator$length)
+    indiFrom[1] + cos(textOpt$indicator$toAngle/180*pi)*textOpt$indicator$length,
+    indiFrom[2] + sin(textOpt$indicator$toAngle/180*pi)*textOpt$indicator$length)
   along <- indiTo - indiFrom
   along <- along/sqrt(sum(along^2))
   perp <- c(along[2], -along[1])
   indiPoints <- rbind(
-    indiFrom - along*opt$indicator$width + opt$indicator$width/2*perp,
-    indiFrom - along*opt$indicator$width - opt$indicator$width/2*perp,
+    indiFrom - along*textOpt$indicator$width + textOpt$indicator$width/2*perp,
+    indiFrom - along*textOpt$indicator$width - textOpt$indicator$width/2*perp,
     indiTo)
   indiPoly <- geos_make_polygon(indiPoints[,1], indiPoints[,2], ring_id = 1)
   bubbleIndi <- geos_union(bubbleBuffed, indiPoly)
@@ -413,7 +429,7 @@ createCallout <- function(opt, panelBox, innerSep=0.1) {
     bubbleIndiCoords$x + panelBox$x,
     bubbleIndiCoords$y + panelBox$y)
   tikzElli <- paste0(
-    sprintf(r"(\draw[%sEllipse] )", opt$kind),
+    sprintf(r"(\draw[%sEllipse] )", textOpt$kind),
     coordsToTikzPath(finalCoords)
   )
   textBoxCoords <- wk::wk_coords(geos_unique_points(textPolygon))
@@ -424,9 +440,9 @@ createCallout <- function(opt, panelBox, innerSep=0.1) {
     r"(\draw[textArea] )",
     coordsToTikzPath(finalCoords)
   )
-  text <- str_replace_all(opt$text, "\\n", r"(\\\\)")
+  text <- str_replace_all(textOpt$text, "\\n", r"(\\\\)")
   tikzText <- str_glue(
-    sprintf(r"(\node[%sText,)", opt$kind),
+    sprintf(r"(\node[%sText,)", textOpt$kind),
     paste0(names(nodeOpt), "=", unlist(nodeOpt),collapse=", "),
     r"(] at ({pos[1]+panelBox$x},{pos[2]+panelBox$y}) {{{text}}};)")
   return(paste(

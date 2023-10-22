@@ -1,5 +1,5 @@
 * font and font size as page / global options (beware of hardcoded text height)
-* merge should create image pdfs that are needed for text rendering
+o merge should create image pdfs that are needed for text rendering
 
 * global options
 	- set DPI globally, not for each page;

@@ -10,10 +10,15 @@ getTextLengthTexPath <- function() {
   system.file("tex", "textLength.tex", package="ComicPanelR")
 }
 
-runLualatex <- function(filePath, times=1) {
+runLualatex <- function(filePath, times=1, doNotRender=FALSE) {
   for (i in seq_len(times)) {
-    sprintf('lualatex.exe -synctex=1 -interaction=nonstopmode "%s"', filePath) |>
-      system()
+    if(doNotRender) {
+      sprintf('lualatex.exe --synctex=0 --draftmode --interaction=nonstopmode "%s"', filePath) |>
+        system(ignore.stdout = TRUE)
+    } else {
+      sprintf('lualatex.exe --synctex=1 --interaction=nonstopmode "%s"', filePath) |>
+        system(ignore.stdout = TRUE)
+    }
   }
 }
 
@@ -36,7 +41,7 @@ writeTemplate <- function(vars, outPath, templatePath) {
   writeLines(template, outPath)
 }
 
-getTextLengths <- function(text) {
+getTextLengths <- function(text, textOpts, fontOpts) {
   tmpPath <- tempdir()
   wd <- getwd()
   on.exit(setwd(wd))
@@ -50,10 +55,15 @@ getTextLengths <- function(text) {
     sprintf(texBase, txtData$kind, txtData$text, txtData$kind, txtData$text),
     collapse="\n")
   writeTemplate(
-    list(content=content, fileName="textLengthResult.txt"),
+    list(
+      content = content,
+      fileName = "textLengthResult.txt",
+      font = fontOpts$font,
+      fontSizePt = fontOpts$fontSizePt,
+      lineHeightPt = fontOpts$lineHeightPt),
     "textLengthInstance.tex",
     getTextLengthTexPath())
-  runLualatex("textLengthInstance.tex")
+  runLualatex("textLengthInstance.tex", doNotRender = TRUE)
   res <- readLines("textLengthResult.txt")
   mat <- str_match(res, r"(^(\w+)\((.*)\)=(\d+\.?\d*)pt$)")[,-1]
   colnames(mat) <- c("kind", "text", "length")

@@ -2,14 +2,15 @@
 runResize <- function(nr = NULL) {
 
   opts <- jsonlite::read_json("opt_07_resize.json")
-  panAndPanels <- readRDS("store_05_panels-effect.RDS")
-  render <- ConfigOpts::readOpts("opt_06_render.json", c("Render"))
+  panAndPanels <- readRDS(opts$panAndPanel)
+  render <- ConfigOpts::readOpts(opts$renderOpts, "Render")
+
 
   for (resizeOpts in opts$panels) {
 
     if (!is.null(nr)) if (resizeOpts$panelNr != nr) next
 
-    prefix <- sprintf("Ch%dPage%02d_%03d", opts$chapterNr, opts$pageNr, resizeOpts$panelNr)
+    prefix <- sprintf("%s_%03d", opts$name, resizeOpts$panelNr)
     innerBorder <- panAndPanels$panels |> filter(panelId == resizeOpts$panelNr) |> pull(inner)
 
     cat(prefix, "... ")
@@ -35,7 +36,7 @@ runResize <- function(nr = NULL) {
     cat("gutter ... ")
 
     resizeOpts <- opts$gutter
-    prefix <- sprintf("Ch%dPage%02d_gutter", opts$chapterNr, opts$pageNr)
+    prefix <- sprintf("%s_gutter", opts$name)
     resizeImage(
       pathDrawn = resizeOpts$path,
       pathNegative = paste0(prefix, "_negative.tiff"),
