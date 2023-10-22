@@ -190,9 +190,9 @@ renderCalloutOne <- function(nr) {
     hInner = finalBox$h,
     imageBelow = "image.pdf",
     imageAbove = "negative.pdf",
-    font = opts$font,
-    fontSizePt = opts$fontSizePt,
-    lineHeightPt = opts$lineHeightPt,
+    font = fontOpts$font,
+    fontSizePt = fontOpts$fontSizePt,
+    lineHeightPt = fontOpts$lineHeightPt,
     main = content)
 
   writeTemplate(vars, "panelCalloutOne.tex", getTikzCalloutOnePath())

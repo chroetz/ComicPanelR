@@ -1,4 +1,4 @@
-* font and font size as page / global options (beware of hardcoded text height)
+o font and font size as page / global options (beware of hardcoded text height)
 o merge should create image pdfs that are needed for text rendering
 
 * global options
