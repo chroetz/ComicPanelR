@@ -9,7 +9,7 @@ createStencils <- function() {
     createStencilsOne(
       fileInStore = files$file1[i],
       fileInOpts = files$file2[i],
-      fileOutMerge = paste0("mergeinfo", files$suffix[i], ".json"))
+      fileOutMerge = paste0("opt_08_merge", files$suffix[i], ".json"))
   }
 
   return(invisible())
@@ -91,7 +91,7 @@ createMergeInfo <- function(panels, pan, dpi, fileOut) {
       image = sprintf("%s_frame_image.tiff", pan$name),
       positive = sprintf("%s_frame_positive.tiff", pan$name),
       negative = sprintf("%s_frame_negative.tiff", pan$name)),
-    out = sprintf("%s.tiff", pan$name)
+    out = sprintf("%s_merged.tiff", pan$name)
   )
 
   jsonlite::write_json(

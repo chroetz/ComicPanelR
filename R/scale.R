@@ -1,7 +1,7 @@
 #' @export
 runResize <- function(nr = NULL) {
 
-  opts <- jsonlite::read_json("resize.json")
+  opts <- jsonlite::read_json("opt_07_resize.json")
   panAndPanels <- readRDS("store_05_panels-effect.RDS")
   render <- ConfigOpts::readOpts("opt_06_render.json", c("Render"))
 
@@ -72,6 +72,7 @@ resizeImage <- function(
     fitExactly = FALSE
     ) {
   if (!dir.exists("tmp")) dir.create("tmp")
+  pathDrawn <- normalizePath(pathDrawn, mustWork=TRUE)
   if (reformat) {
     sprintf(
       "magick %s -strip tmp/drawn_stripped.tiff",

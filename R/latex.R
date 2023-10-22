@@ -1,9 +1,9 @@
 getTikzCalloutOnePath <- function() {
-  system.file("tex", "tikzCalloutOne.tex", package="ComicPanelR")
+  system.file("tex", "tikzTextPage.tex", package="ComicPanelR")
 }
 
 getTikzCalloutPagePath <- function() {
-  system.file("tex", "tikzCalloutPage.tex", package="ComicPanelR")
+  system.file("tex", "tikzTextPage.tex", package="ComicPanelR")
 }
 
 getTextLengthTexPath <- function() {
@@ -36,16 +36,18 @@ writeTemplate <- function(vars, outPath, templatePath) {
   writeLines(template, outPath)
 }
 
-getTextWidth <- function(text) {
+getTextLengths <- function(text) {
   tmpPath <- tempdir()
   wd <- getwd()
   on.exit(setwd(wd))
   setwd(tmpPath)
+  texBase <- r"(\setto%s{\textlength}{%s}\immediate\write\myfile{%s(%s)=\the\textlength})"
+  txtData <- expand.grid(
+    kind = c("width", "height", "depth"),
+    text = text,
+    stringsAsFactors=FALSE)
   content <- paste0(
-    r"(\settowidth{\textwidthlength}{)",
-    text,
-    "}\n",
-    r"(\immediate\write\myfile{width=\the\textwidthlength})",
+    sprintf(texBase, txtData$kind, txtData$text, txtData$kind, txtData$text),
     collapse="\n")
   writeTemplate(
     list(content=content, fileName="textLengthResult.txt"),
@@ -53,10 +55,11 @@ getTextWidth <- function(text) {
     getTextLengthTexPath())
   runLualatex("textLengthInstance.tex")
   res <- readLines("textLengthResult.txt")
-  textWidthCm <-
-    res |>
-    str_extract("\\d+(\\.\\d+)?") |>
-    as.numeric() |>
-    (`*`)(.cmPerPt)
-  return(textWidthCm)
+  mat <- str_match(res, r"(^(\w+)\((.*)\)=(\d+\.?\d*)pt$)")[,-1]
+  colnames(mat) <- c("kind", "text", "length")
+  lenInCmTable <-
+    mat |>
+    tibble::as_tibble() |>
+    mutate(length = as.numeric(length) * .cmPerPt)
+  return(lenInCmTable)
 }

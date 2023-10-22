@@ -8,13 +8,14 @@
 \setlength{\parskip}{0pt}
 \setlength{\topskip}{0pt}
 \setlength{\parindent}{0pt}
-\setmainfont{Arial}
-\tikzset{every picture/.style={/utils/exec={\sffamily}}}
+\setmainfont{Laffayette Comic Pro}
 
 \definecolor{colTextBoxBg}{HTML}{FFE97F}
 \definecolor{colTextComputer}{HTML}{4CFF00}
 
 \def\bleed{~bleed~}
+\def\widthCm{~wInner~}
+\def\heightCm{~hInner~}
 
 \tikzset{
 	narration/.style={
@@ -22,24 +23,30 @@
 		line width = 0.5mm,
 		text = black,
 		fill = colTextBoxBg,
-		font = \fontsize{9pt}{11pt}\selectfont,
+		font = \setmainfont{Laffayette Comic Pro}\fontsize{7.2pt}{9pt}\selectfont,
 	},
 	computer/.style={
 		text = colTextComputer,
-		font = \ttfamily\fontsize{9pt}{11pt}\selectfont,
+		font = \setmainfont{Courier New}\fontsize{9pt}{11pt}\selectfont,
 	},
 	speechText/.style={
 		text = black,
-		font = \fontsize{9pt}{11pt}\selectfont,
+		font = \setmainfont{Laffayette Comic Pro}\fontsize{7.2pt}{9pt}\selectfont,
+		inner sep=0pt,
 	},
 	speechEllipse/.style={
 		draw = black,
 		fill = white,
 		line width = 0.5mm,
 	},
+	textArea/.style={
+		draw = none,
+		fill = none%red
+	},
 	whisperText/.style={
 		text = black,
-		font = \fontsize{9pt}{11pt}\selectfont,
+		font = \setmainfont{Laffayette Comic Pro}\fontsize{7.2pt}{9pt}\selectfont,
+		inner sep=0pt,
 	},
 	whisperEllipse/.style={
 		draw = black,
@@ -49,7 +56,8 @@
 	},
 	thoughtText/.style={
 		text = black,
-		font = \fontsize{9pt}{11pt}\selectfont,
+		font = \setmainfont{Laffayette Comic Pro}\fontsize{7.2pt}{9pt}\selectfont,
+		inner sep=0pt,
 	},
 	thoughtEllipse/.style={
 		draw = black,
@@ -59,6 +67,7 @@
 }
 
 \begin{document}%
+	\fontsize{7.2pt}{9pt}\selectfont
 	\begin{tikzpicture}[remember picture, overlay]%
 		\node at (current page.center) {\includegraphics[width=\paperwidth,height=\paperheight]{~imageBelow~}};
 	\end{tikzpicture}%
@@ -68,4 +77,16 @@
 	\begin{tikzpicture}[remember picture, overlay]%
 		\node at (current page.center) {\includegraphics[width=\paperwidth,height=\paperheight]{~imageAbove~}};
 	\end{tikzpicture}%
+%	\begin{tikzpicture}[remember picture, overlay, y=-1cm, shift={(0.3cm, -0.3cm)}]%
+%		\fill[red] (-\bleed, -\bleed) rectangle ++(\bleed, \heightCm+2*\bleed);
+%		\fill[red] (-\bleed, -\bleed) rectangle ++(\widthCm+2*\bleed, \bleed);
+%		\fill[red] (-\bleed, \heightCm) rectangle ++(\widthCm+2*\bleed, \bleed);
+%		\fill[red] (\widthCm, -\bleed) rectangle ++(\bleed, \heightCm+2*\bleed);
+%		\draw[help lines,xstep=1cm,ystep=1cm] (0,0) grid (\widthCm,\heightCm);
+%		\foreach \x in {0,1,...,\widthCm} {
+%			\foreach \y in {0,1,...,\heightCm} {
+%				\node [anchor=north west] at (\x,\y) {{\tiny\x,\y}}; 
+%			}
+%		}
+%	\end{tikzpicture}%
 \end{document}

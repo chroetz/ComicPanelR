@@ -1,6 +1,6 @@
 #' @export
 createMerged <- function() {
-  files <- getFiles("mergeinfo", "json")
+  files <- getFiles("opt_08_merge", "json")
   for (i in seq_len(nrow(files))) {
     createMergedOne(
       fileInMerge = files$file[i])
@@ -12,7 +12,17 @@ createMergedOne <- function(fileInMerge) {
   merge(mergeInfo)
 }
 
-merge <- function(info, until = NULL, outPath = NULL) {
+merge <- function(info, outPath = NULL) {
+  belowPath <- createBelowGutter(info, NULL)
+  abovePath <- createGutterAndAbove(info, NULL)
+  if (is.null(outPath)) {
+    outPath <- paste0(info$name, "_merged", ".tiff")
+  }
+  composeOver(abovePath, belowPath, outPath)
+}
+
+
+createBelowGutter <- function(info, outPath = NULL) {
 
   tmpPagePath <- tempfile(fileext = ".tiff")
 
@@ -35,26 +45,8 @@ merge <- function(info, until = NULL, outPath = NULL) {
   cat("adding", info$belowGutter, "...\n")
   composeOver(info$belowGutter, tmpPagePath, tmpPagePath)
 
-  if (identical(until, "belowGutter")) {
-    finalizeMerge(tmpPagePath, info, outPath)
-    return(invisible())
-  }
-
-  cat("adding", info$gutter$image, "...\n")
-  tmpGutterPath <- tempfile(fileext = ".tiff")
-  createCutout(info$gutter$positive, info$gutter$image, tmpGutterPath)
-  composeOver(tmpGutterPath, tmpPagePath, tmpPagePath)
-
-  cat("adding", info$frame$image, "...\n")
-  tmpFramePath <- tempfile(fileext = ".tiff")
-  createCutout(info$frame$positive, info$frame$image, tmpFramePath)
-  composeOver(tmpFramePath, tmpPagePath, tmpPagePath)
-
-  cat("adding", info$aboveGutter, "...\n")
-  composeOver(info$aboveGutter, tmpPagePath, tmpPagePath)
-
-  finalizeMerge(tmpPagePath, info, outPath)
-  return(invisible())
+  finalizeMerge(tmpPagePath, info, outPath, suffix = "_merged_below")
+  return(tmpPagePath)
 }
 
 
@@ -84,21 +76,18 @@ createGutterAndAbove <- function(info, outPath = NULL) {
   cat("adding", info$aboveGutter, "...\n")
   composeOver(info$aboveGutter, tmpPagePath, tmpPagePath)
 
-  finalizeMerge(tmpPagePath, info, outPath)
-  return(invisible())
+  finalizeMerge(tmpPagePath, info, outPath, suffix = "_merged_above")
+  return(tmpPagePath)
 }
 
 
-finalizeMerge <- function(tmpPagePath, info, outPath=NULL) {
+finalizeMerge <- function(tmpPagePath, info, outPath=NULL, suffix = "") {
   setImageMeta(tmpPagePath, dpi=info$dpi)
-  if (!is.null(outPath)) {
-    cat("creating output file", outPath, "...\n")
-    file.rename(tmpPagePath, outPath)
-  } else {
-    cat("creating output file", info$out, "...\n")
-    file.rename(tmpPagePath, info$out)
+  if (is.null(outPath)) {
+    outPath <- paste0(info$name, suffix, ".pdf")
   }
-
+  cat("creating output file", outPath, "...\n")
+  magickFormat(tmpPagePath, outPath)
   cat("Done.\n")
   return(invisible())
 }

@@ -48,11 +48,12 @@ readTextOpt <- function(filePath) {
 }
 
 
+#' @export
 renderPageCallout <- function() {
-  opts <- readTextOpt("text.json")
+  opts <- readTextOpt("opt_09_text.json")
   panAndPanels <- readRDS(opts$panAndPanel)
   render <- ConfigOpts::readOpts(opts$renderOpts, c("Render"))
-  info <- jsonlite::read_json("mergeinfo.json")
+  info <- jsonlite::read_json("opt_08_merge.json")
 
   geo <- panAndPanels$pan$geometry
   dataBox <- getDataBoxInCm(geo)
@@ -83,15 +84,9 @@ renderPageCallout <- function() {
     content <- paste0(content, "\\end{scope}\n")
   }
 
-  merge(info, until="belowGutter", "tmp/mergedBelowGutter.tiff")
-  createGutterAndAbove(info, "tmp/mergedGutterAndAbove.tiff")
-
   wd <- getwd()
   on.exit(setwd(wd))
   setwd("tmp")
-
-  magickFormat("mergedBelowGutter.tiff", "mergedBelowGutter.pdf")
-  magickFormat("mergedGutterAndAbove.tiff", "mergedGutterAndAbove.pdf")
 
   vars <- list(
     wTot = dataBox$w,
@@ -99,12 +94,14 @@ renderPageCallout <- function() {
     bleed = bleed,
     wInner = finalBox$w,
     hInner = finalBox$h,
-    imageBelow = "mergedBelowGutter.pdf",
-    imageAbove = "mergedGutterAndAbove.pdf",
+    imageBelow = sprintf("../%s_merged_below.pdf", info$name),
+    imageAbove = sprintf("../%s_merged_above.pdf", info$name),
     main = content)
   writeTemplate(vars, "page.tex", getTikzCalloutPagePath())
 
   runLualatex("page.tex", 2)
+
+  file.rename("page.pdf", sprintf("../%s.pdf", opts$name))
 }
 
 
@@ -119,7 +116,7 @@ getTextRenderData <- function(textOpt, panels) {
 
 
 renderCalloutOne <- function(nr) {
-  opts <- readTextOpt("text.json")
+  opts <- readTextOpt("opt_09_text.json")
   panAndPanels <- readRDS(opts$panAndPanel)
   render <- ConfigOpts::readOpts(opts$renderOpts, c("Render"))
 
@@ -184,8 +181,8 @@ renderCalloutOne <- function(nr) {
     bleed = bleed,
     wInner = finalBox$w,
     hInner = finalBox$h,
-    image = "image.pdf",
-    negative = "negative.pdf",
+    imageBelow = "image.pdf",
+    imageAbove = "negative.pdf",
     main = content)
   writeTemplate(vars, "panelCalloutOne.tex", getTikzCalloutOnePath())
 
@@ -276,10 +273,11 @@ createTextBox <- function(opt, panelBox) {
 }
 
 
-createCallout <- function(opt, panelBox, innerSep=0.2) {
+createCallout <- function(opt, panelBox, innerSep=0.1) {
   textLines <- str_split_1(opt$text, "\n")
-  textWidth <- getTextWidth(textLines)
-  lineHeight <- 11 * .cmPerPt
+  textLength <- getTextLengths(textLines)
+  textWidth <- textLength |> filter(kind == "width") |> pull(length)
+  lineHeight <- 9 * .cmPerPt # TODO magic number!!
   panel <- geos_create_rectangle(0, 0, panelBox$w, panelBox$h)
   nodeOpt <- list()
   switch(
@@ -293,6 +291,7 @@ createCallout <- function(opt, panelBox, innerSep=0.2) {
       nodeOpt$anchor <- "north west"
       nodeOpt$align <- "left"
       pos <- c(0, 0)
+      borderIndicator <- c(1, 1)
     },
     "top" = {
       rects <- geos_create_rectangle(
@@ -303,6 +302,7 @@ createCallout <- function(opt, panelBox, innerSep=0.2) {
       nodeOpt$anchor <- "north"
       nodeOpt$align <- "center"
       pos <- c(panelBox$w/2, 0)
+      borderIndicator <- c(0, 1)
     },
     "topright" = {
       rects <- geos_create_rectangle(
@@ -313,6 +313,7 @@ createCallout <- function(opt, panelBox, innerSep=0.2) {
       nodeOpt$anchor <- "north east"
       nodeOpt$align <- "right"
       pos <- c(panelBox$w, 0)
+      borderIndicator <- c(-1, 1)
     },
     "bottomleft" = {
       rects <- geos_create_rectangle(
@@ -323,6 +324,7 @@ createCallout <- function(opt, panelBox, innerSep=0.2) {
       nodeOpt$anchor <- "south west"
       nodeOpt$align <- "left"
       pos <- c(0, panelBox$h)
+      borderIndicator <- c(1, -1)
     },
     "bottom" = {
       rects <- geos_create_rectangle(
@@ -333,6 +335,7 @@ createCallout <- function(opt, panelBox, innerSep=0.2) {
       nodeOpt$anchor <- "south"
       nodeOpt$align <- "center"
       pos <- c(panelBox$w/2, panelBox$h)
+      borderIndicator <- c(0, -1)
     },
     "bottomright" = {
       rects <- geos_create_rectangle(
@@ -343,6 +346,7 @@ createCallout <- function(opt, panelBox, innerSep=0.2) {
       nodeOpt$anchor <- "south east"
       nodeOpt$align <- "right"
       pos <- c(panelBox$w, panelBox$h)
+      borderIndicator <- c(-1, -1)
     },
     "left" = {
       rects <- geos_create_rectangle(
@@ -353,6 +357,7 @@ createCallout <- function(opt, panelBox, innerSep=0.2) {
       nodeOpt$anchor <- "west"
       nodeOpt$align <- "left"
       pos <- c(0, panelBox$h/2)
+      borderIndicator <- c(1, 0)
     },
     "right" = {
       rects <- geos_create_rectangle(
@@ -363,6 +368,7 @@ createCallout <- function(opt, panelBox, innerSep=0.2) {
       nodeOpt$anchor <- "east"
       nodeOpt$align <- "right"
       pos <- c(panelBox$w, panelBox$h/2)
+      borderIndicator <- c(-1, 0)
     },
     "center" = {
       rects <- geos_create_rectangle(
@@ -373,15 +379,18 @@ createCallout <- function(opt, panelBox, innerSep=0.2) {
       nodeOpt$anchor <- "center"
       nodeOpt$align <- "center"
       pos <- c(panelBox$w/2, panelBox$h/2)
+      borderIndicator <- c(0, 0)
     },
     stop("Unknown position ", opt$position)
   )
+  pos <- pos + innerSep * borderIndicator
+  rects <- geos_transform_xy(rects, wk::wk_affine_translate(innerSep * borderIndicator[1], innerSep * borderIndicator[2]))
   if (!is.null(opt$shift)) {
     pos <- pos + opt$shift
     rects <- geos_transform_xy(rects, wk::wk_affine_translate(opt$shift[1],opt$shift[2]))
   }
-  poly <- geos_unary_union(geos_make_collection(rects))
-  par <- optimizeEllipse(panel, poly)
+  textPolygon <- geos_unary_union(geos_make_collection(rects))
+  par <- optimizeEllipse(panel, textPolygon)
   bubble <- makeEllipse(par[1], par[2], par[3], par[4])
   bubbleBuffed <- geos_buffer(bubble, distance = innerSep)
   indiFrom <- c(
@@ -407,11 +416,22 @@ createCallout <- function(opt, panelBox, innerSep=0.2) {
     sprintf(r"(\draw[%sEllipse] )", opt$kind),
     coordsToTikzPath(finalCoords)
   )
+  textBoxCoords <- wk::wk_coords(geos_unique_points(textPolygon))
+  finalCoords <- cbind(
+    textBoxCoords$x + panelBox$x,
+    textBoxCoords$y + panelBox$y)
+  tikzTextArea <- paste0(
+    r"(\draw[textArea] )",
+    coordsToTikzPath(finalCoords)
+  )
   text <- str_replace_all(opt$text, "\\n", r"(\\\\)")
   tikzText <- str_glue(
     sprintf(r"(\node[%sText,)", opt$kind),
     paste0(names(nodeOpt), "=", unlist(nodeOpt),collapse=", "),
     r"(] at ({pos[1]+panelBox$x},{pos[2]+panelBox$y}) {{{text}}};)")
-  return(paste(tikzElli, tikzText, sep="\n"))
+  return(paste(
+    tikzElli,
+    tikzTextArea,
+    tikzText, sep="\n"))
 }
 

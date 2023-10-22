@@ -44,7 +44,7 @@ removeHere <- function() {
     "_gutter_positive")
   stores <- "^store_[0-9]{2}_.*\\.RDS$"
   preview <- "^preview_[0-9]{2}_.*\\.png$"
-  merge <- "mergeinfo.*\\.json"
+  merge <- "opt_08_merge.*\\.json"
   pattern <- paste0("(" , c(paste0(tiffs, "\\.tiff$"), stores, preview, merge), ")", collapse="|")
   oldFiles <- dir(pattern = pattern)
   file.remove(oldFiles)

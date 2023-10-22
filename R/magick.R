@@ -1,4 +1,5 @@
 magickResize <- function(pathIn, pathOut, w, h) {
+  pathIn <- normalizePath(pathIn, mustWork=TRUE)
   sprintf(
     'magick "%s" -resize %dx%d %s "%s"',
     pathIn, w, h, .formatString, pathOut
@@ -7,6 +8,7 @@ magickResize <- function(pathIn, pathOut, w, h) {
 }
 
 magickFormat <- function(pathIn, pathOut) {
+  pathIn <- normalizePath(pathIn, mustWork=TRUE)
   sprintf(
     'magick "%s" %s "%s"',
     pathIn, .formatString, pathOut
@@ -15,6 +17,8 @@ magickFormat <- function(pathIn, pathOut) {
 }
 
 createCutout <- function(positive, image, outPath) {
+  positive <- normalizePath(positive, mustWork=TRUE)
+  image <- normalizePath(image, mustWork=TRUE)
   sprintf(
     'magick composite -compose copy-opacity "%s" "%s" "%s"',
     positive,
@@ -25,6 +29,8 @@ createCutout <- function(positive, image, outPath) {
 }
 
 composeOver <- function(top, bottom, out) {
+  top <- normalizePath(top, mustWork=TRUE)
+  bottom <- normalizePath(bottom, mustWork=TRUE)
   sprintf(
     'magick composite -compose over "%s" "%s" "%s"',
     top,

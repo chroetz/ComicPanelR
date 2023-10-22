@@ -1,3 +1,9 @@
+* font and font size as page / global options (beware of hardcoded text height)
+* merge should create image pdfs that are needed for text rendering
+
+* global options
+	- set DPI globally, not for each page;
+	- i.e. use project specific defaultOpts
 * interactive:
 	- create user dialog to choose, e.g., resize panel 3
 
