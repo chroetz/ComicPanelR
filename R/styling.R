@@ -14,7 +14,10 @@ createPanelsWithEffects <- function() {
   }
 }
 
-createPanelsWithEffectsOne <- function(fileInStore, fileInOpts, fileOutPng, fileOutRds) {
+createPanelsWithEffectsOne <- function(
+    fileInStore, fileInOpts, fileOutPng, fileOutRds
+) {
+
   panelsAndPan <- readRDS(fileInStore)
   pan <- panelsAndPan$pan
   panels <- panelsAndPan$panels

@@ -2,6 +2,10 @@ convertCmToPx <- function(len, dpi) {
   round(len * dpi / .cmPerInch)
 }
 
+convertPxToCm <- function(len, dpi) {
+  len / dpi * .cmPerInch
+}
+
 convertDataPxCoorToFinalCmCoor <- function(coor, dpi, geometry) {
   coor / dpi * .cmPerInch - c(geometry$bleed$left, geometry$bleed$top)
 }

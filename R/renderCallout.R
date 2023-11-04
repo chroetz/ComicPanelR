@@ -106,7 +106,7 @@ renderPageCallout <- function() {
 
   runLualatex("page.tex", 2)
 
-  file.rename("page.pdf", sprintf("../%s.pdf", opts$name))
+  file.rename("page.pdf", sprintf("../%s.pdf", panAndPanels$pan$name))
 }
 
 
@@ -130,10 +130,10 @@ renderCalloutOne <- function(nr) {
   panelBox <- getPanelBoxFromPanels(panAndPanels$panels,  panelNr)
 
   pathPanelImage <-
-    sprintf("%s_%03d_image.tiff", opts$name, panelNr) |>
+    sprintf("%s_%03d_image.tiff", panAndPanels$pan$name, panelNr) |>
     normalizePath(mustWork = TRUE)
   pathPanelNegative <-
-    sprintf("%s_%03d_negative.tiff", opts$name, panelNr) |>
+    sprintf("%s_%03d_negative.tiff", panAndPanels$pan$name, panelNr) |>
     normalizePath(mustWork = TRUE)
 
   wd <- getwd()

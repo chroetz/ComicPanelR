@@ -38,26 +38,32 @@ panel2stencil <- function(panels, pan, frameStyles, dpi, fileOutMerge) {
   n <- nrow(p)
 
   for (i in seq_len(n)) {
-    filePrefix <- sprintf("%s_%03d_", pan$name, i)
-    cat(filePrefix, "...", sep="")
+    filePrefix <- sprintf("%s_%03d_", pan$name, p$panelId[[i]])
+    cat("creating ", filePrefix, " stencils...\n", sep="")
     createSinglePanelStencils(p$data[[i]], pan, dpi, filePrefix)
     gc()
   }
 
   filePrefix <- sprintf("%s_", pan$name)
-  cat(filePrefix, "...", sep="")
+  cat("creating ", filePrefix, " page stencils ...\n", sep="")
   createPageStencils(p, pan, dpi, filePrefix)
   gc()
 
+  cat("creating gutter image...\n", sep="")
   createBlankPan("#FFFFFFFF", pan, dpi, sprintf("%s_gutter_image.tiff", pan$name))
+  cat("creating frame image...\n", sep="")
   createBlankPan("#000000FF", pan, dpi, sprintf("%s_frame_image.tiff", pan$name))
+  cat("creating above gutter image...\n", sep="")
   createBlankPan("#00000000", pan, dpi, sprintf("%s_abovegutter_image.tiff", pan$name))
+  cat("creating below gutter image...\n", sep="")
   createBlankPan("#00000000", pan, dpi, sprintf("%s_belowgutter_image.tiff", pan$name))
   colors <- getPanelColors(n, alpha=1)
+  cat("creating panel images...\n", sep="")
   for (i in seq_len(n)) {
-    createBlankPan(colors[i], pan, dpi, sprintf("%s_%03d_image.tiff", pan$name, i))
+    createBlankPan(colors[i], pan, dpi, sprintf("%s_%03d_image.tiff", pan$name,  p$panelId[[i]]))
   }
 
+  cat("creating merge info ...\n", sep="")
   createMergeInfo(panels, pan, dpi, fileOutMerge)
 
   return(invisible())
@@ -65,7 +71,6 @@ panel2stencil <- function(panels, pan, frameStyles, dpi, fileOutMerge) {
 
 createMergeInfo <- function(panels, pan, dpi, fileOut) {
   geo <- pan$geometry
-  n <- panels$panelId |> unique() |> length()
 
   info <- list(
     name = pan$name,
@@ -73,12 +78,12 @@ createMergeInfo <- function(panels, pan, dpi, fileOut) {
     width = getDataWidthInPx(geo, dpi),
     height = getDataHeightInPx(geo, dpi),
     panels = lapply(
-      1:n,
-      \(i) {
+      panels$panelId |> unique(),
+      \(id) {
         list(
-          image = sprintf("%s_%03d_image.tiff", pan$name, i),
-          positive = sprintf("%s_%03d_positive.tiff", pan$name, i),
-          negative = sprintf("%s_%03d_negative.tiff", pan$name, i)
+          image = sprintf("%s_%03d_image.tiff", pan$name, id),
+          positive = sprintf("%s_%03d_positive.tiff", pan$name, id),
+          negative = sprintf("%s_%03d_negative.tiff", pan$name, id)
         )
       }),
     aboveGutter = sprintf("%s_abovegutter_image.tiff", pan$name),

@@ -20,9 +20,10 @@ createCutout <- function(positive, image, outPath) {
   positive <- normalizePath(positive, mustWork=TRUE)
   image <- normalizePath(image, mustWork=TRUE)
   sprintf(
-    'magick composite -compose copy-opacity "%s" "%s" "%s"',
+    'magick composite -compose copy-opacity "%s" "%s" %s "%s"',
     positive,
     image,
+    .formatString,
     outPath
   ) |>
     system()
@@ -32,9 +33,10 @@ composeOver <- function(top, bottom, out) {
   top <- normalizePath(top, mustWork=TRUE)
   bottom <- normalizePath(bottom, mustWork=TRUE)
   sprintf(
-    'magick composite -compose over "%s" "%s" "%s"',
+    'magick composite -compose over "%s" "%s" %s "%s"',
     top,
     bottom,
+    .formatString,
     out
   ) |>
     system()
