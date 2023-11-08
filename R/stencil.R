@@ -318,7 +318,7 @@ setupDevice <- function(pan, dpi) {
   return(img)
 }
 
-createBlank <- function(color, w, h, dpi, fileName, overwrite=FALSE) {
+createBlank <- function(color, w, h, dpi, fileName, overwrite=FALSE, colorFromImg=NULL) {
   if (file.exists(fileName)) {
     if (!overwrite) {
       cat(" - not overwriting", fileName, "- ")
@@ -326,15 +326,27 @@ createBlank <- function(color, w, h, dpi, fileName, overwrite=FALSE) {
     }
   }
 
-  sprintf(
-    'magick -size %dx%d canvas:%s -profile %s -density %d %s %s',
-    w, h, color,
-    getColorProfilePath(),
-    dpi,
-    .formatString,
-    fileName
-  ) |>
-    system()
+  if (!is.null(color)) {
+    sprintf(
+      'magick -size %dx%d canvas:%s -profile "%s" -density %d %s "%s"',
+      w, h, color,
+      getColorProfilePath(),
+      dpi,
+      .formatString,
+      fileName
+    ) |>
+      system()
+  } else if (!is.null(colorFromImg)) {
+    sprintf(
+      'magick "%s" -crop 1x1+0+0 +repage -scale %dx%d\\! -profile "%s" -density %d %s "%s"',
+      colorFromImg, w, h,
+      getColorProfilePath(),
+      dpi,
+      .formatString,
+      fileName
+    ) |>
+      system()
+  } else stop("createBlank needs some color specification")
 }
 
 createBlankPan <- function(color, pan, dpi, fileName, overwrite=FALSE) {

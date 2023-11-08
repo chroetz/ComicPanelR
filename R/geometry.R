@@ -84,6 +84,15 @@ getPanelBoxInCm <- function(geometry) {
     geometry$size$height - (geometry$margin$top + geometry$margin$bottom))
 }
 
+dataCm2PanelCm <- function(coor, panelBox, geo) {
+  coor - c(geo$bleed$left + panelBox$x, geo$bleed$top + panelBox$y)
+}
+dataCm2FinalCm <- function(coor, geo) {
+  coor - c(geo$bleed$left, geo$bleed$top)
+}
+
+
+
 
 
 makeBox <- function(x, y, w, h) {

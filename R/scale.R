@@ -94,7 +94,8 @@ resizeImage <- function(
   infoDrawn <- tiff::readTIFF(pathDrawnReady, payload = FALSE)
 
   createBlank(
-    "white",
+    color = NULL,
+    colorFromImg = pathDrawnReady,
     getDataWidthInPx(geo, dpi),
     getDataHeightInPx(geo, dpi),
     dpi,
@@ -481,7 +482,8 @@ resizeImageAbsolute <- function(
   infoDrawn <- tiff::readTIFF(pathDrawnReady, payload = FALSE)
 
   createBlank(
-    "white",
+    color = NULL,
+    colorFromImg = pathDrawnReady,
     getDataWidthInPx(geo, dpi),
     getDataHeightInPx(geo, dpi),
     dpi,
