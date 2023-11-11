@@ -225,6 +225,7 @@ createTikzContent <- function(textOpt, panelPoly, fontOpts, geo, devel) {
     narration = ,
     computer = createTextBox(textOpt, panelPoly, fontOpts, geo, devel),
     speech = ,
+    telepathy = ,
     whisper = ,
     thought = createCallout(textOpt, panelPoly, fontOpts, geo, devel)
   )
@@ -243,6 +244,11 @@ getFromPostionString <- function(posStr, panelPoly) {
     panelExtent$ymax-panelExtent$ymin)
   switch(
     posStr,
+    "center" = {
+      nodeOpt$anchor <- "center"
+      nodeOpt$align <- "center"
+      coordinate <- c(panelBox$midX, panelBox$midY)
+    },
     "topright" = {
       nodeOpt$anchor <- "north east"
       nodeOpt$align <- "right"
@@ -296,6 +302,10 @@ createTextBox <- function(opt, panelPoly, fontOpts, geo, devel) {
     nodeOpt <- posInfo$nodeOpt
   } else {
     stop()
+  }
+  if (!is.null(opt$coor)) { # coor overwrites posInfo$coor; transform to panel coor sys
+    newPos <- dataCm2FinalCm(opt$coor, geo)
+    posInfo$coor <- newPos
   }
   if (!is.null(opt$width)) nodeOpt[["text width"]] <- paste0(opt$width, "cm")
   if (!is.null(opt$height)) nodeOpt[["text height"]] <- paste0(opt$height, "cm")

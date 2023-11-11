@@ -33,9 +33,10 @@ composeOver <- function(top, bottom, out) {
   top <- normalizePath(top, mustWork=TRUE)
   bottom <- normalizePath(bottom, mustWork=TRUE)
   sprintf(
-    'magick composite -compose over "%s" "%s" %s "%s"',
+    'magick composite -compose over "%s" "%s" -profile %s %s "%s"',
     top,
     bottom,
+    getColorProfilePath(),
     .formatString,
     out
   ) |>
