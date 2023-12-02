@@ -222,6 +222,8 @@ renderCalloutOne <- function(panelNr) {
 createTikzContent <- function(textOpt, panelPoly, fontOpts, geo, devel) {
   content <- switch(
     textOpt$kind,
+    mail = ,
+    direct = ,
     narration = ,
     computer = createTextBox(textOpt, panelPoly, fontOpts, geo, devel),
     speech = ,
@@ -313,7 +315,8 @@ createTextBox <- function(opt, panelPoly, fontOpts, geo, devel) {
     r"(\node[)",
     opt$kind, ", ",
     paste0(names(nodeOpt), "=", unlist(nodeOpt),collapse=", "),
-    str_glue(r"(] at ({posInfo$coor[1]},{posInfo$coor[2]}) {{{opt$text}}};)"))
+    "] at (", posInfo$coor[1], ",", posInfo$coor[2], ") {",
+    opt$text, "};")
   return(tikz)
 }
 

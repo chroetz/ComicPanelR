@@ -442,7 +442,74 @@ runResizeAbsolute <- function(
     cat("ok \n")
   }
 
+  if (!is.null(resizeOpts$aboveGutter) && (is.null(nr) || "aboveGutter" == nr)) {
+
+    cat("aboveGutter ... ")
+
+    prefix <- sprintf("%s_abovegutter", panAndPanels$pan$name)
+    pathOut <- paste0(prefix, "_image.tiff")
+
+    dpi <- render$dpi
+    geo <- panAndPanels$pan$geometry
+
+    createBlank(
+      color = "#00000000",
+      getDataWidthInPx(geo, dpi),
+      getDataHeightInPx(geo, dpi),
+      dpi,
+      fileName = "tmp/canvas.tiff",
+      overwrite = TRUE)
+
+    for (resizeOpt in resizeOpts$aboveGutter) {
+
+      filePath <- normalizePath(resizeOpt$path)
+      color <- system(sprintf('magick "%s" -format "%%[pixel:p{0,0}]" info:-', filePath), intern = TRUE)
+
+      # change fuzz value to be more or less aggressive in removing color
+      sprintf(
+        'magick "%s" -alpha off -bordercolor %s -border 1 ( +clone -fuzz 16%% -fill none -floodfill +0+0 %s -alpha extract -geometry 200%% -blur 0x0.5 -morphology erode square:1 -geometry 50%% ) -compose CopyOpacity -composite -shave 1 -profile "%s" %s "tmp/drawn.tiff"',
+        filePath,
+        color,
+        color,
+        getColorProfilePath(),
+        .formatString
+      ) |>
+        system()
+
+      sprintf(
+        'magick "tmp/drawn.tiff" -resize %f%% %s tmp/drawnResized.tiff',
+        resizeOpt$scale*100,
+        .formatString
+      ) |>
+        shell()
+
+      if (!is.null(resizeOpt$coorPx)) {
+        xInPx <- resizeOpt$coorPx[1]
+        yInPx <- resizeOpt$coorPx[2]
+      } else if (!is.null(resizeOpt$coor)) {
+        xInPx <- convertCmToPx(resizeOpt$coor[1], dpi)
+        yInPx <- convertCmToPx(resizeOpt$coor[2], dpi)
+      } else {
+        stop("need to sepcify coor or coorPx for aboveGutter")
+      }
+
+      sprintf(
+        'magick composite tmp/drawnResized.tiff -geometry %+d%+d tmp/canvas.tiff -profile "%s" %s "tmp/canvas.tiff"',
+        xInPx,
+        yInPx,
+        getColorProfilePath(),
+        .formatString
+      ) |>
+        shell()
+    }
+
+    file.rename("tmp/canvas.tiff", pathOut)
+
+    cat("ok \n")
+  }
+
   cat("Done. \n")
+
 }
 
 

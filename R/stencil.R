@@ -147,11 +147,17 @@ createPageStencils <- function(p, pan, dpi, filePrefix) {
       image_negate(stencilFrame),
       operator = "Darken")
 
+  stencilFrameedPanel <-
+    image_composite(
+      stencilPanel,
+      stencilFrame,
+      operator = "Lighten")
+
   stencilNegative <-
     image_composite(
       image_composite(
         image_negate(stencilEmpty),
-        image_negate(stencilFrame),
+        image_negate(stencilFrameedPanel),
         operator = "Darken"),
       image_negate(stencilUnframeedPanel),
       operator='copy-opacity'
@@ -186,12 +192,6 @@ createPageStencils <- function(p, pan, dpi, filePrefix) {
     stencilGutterPos,
     sprintf("%sgutter_positive.tiff", filePrefix))
   rm(stencilGutterPos);gc()
-
-  stencilFrameedPanel <-
-    image_composite(
-      stencilPanel,
-      stencilFrame,
-      operator = "Lighten")
 
   stencilGutterNeg <-
     image_composite(
@@ -261,6 +261,12 @@ createSinglePanelStencils <- function(d, pan, dpi, filePrefix) {
   stencilFrame <- channels[1]
   rm(img);rm(channels);gc()
 
+  stencilFrameedPanel <-
+    image_composite(
+      stencilPanel,
+      stencilFrame,
+      operator = "Lighten")
+
   stencilUnframeedPanel <-
     image_composite(
       stencilPanel,
@@ -271,7 +277,7 @@ createSinglePanelStencils <- function(d, pan, dpi, filePrefix) {
     image_composite(
       image_composite(
         image_negate(stencilEmpty),
-        image_negate(stencilFrame),
+        image_negate(stencilFrameedPanel),
         operator = "Darken"),
       image_negate(stencilUnframeedPanel),
       operator='copy-opacity'
@@ -318,7 +324,7 @@ setupDevice <- function(pan, dpi) {
   return(img)
 }
 
-createBlank <- function(color, w, h, dpi, fileName, overwrite=FALSE, colorFromImg=NULL) {
+createBlank <- function(color, w, h, dpi, fileName, overwrite=FALSE, colorFromImg=NULL, colorSpace = NULL) {
   if (file.exists(fileName)) {
     if (!overwrite) {
       cat(" - not overwriting", fileName, "- ")
@@ -328,7 +334,8 @@ createBlank <- function(color, w, h, dpi, fileName, overwrite=FALSE, colorFromIm
 
   if (!is.null(color)) {
     sprintf(
-      'magick -size %dx%d canvas:%s -profile "%s" -density %d %s "%s"',
+      'magick %s -size %dx%d canvas:%s -profile "%s" -density %d %s "%s"',
+      if (is.null(colorSpace)) "" else paste("-colorspace",  colorSpace),
       w, h, color,
       getColorProfilePath(),
       dpi,
@@ -349,13 +356,12 @@ createBlank <- function(color, w, h, dpi, fileName, overwrite=FALSE, colorFromIm
   } else stop("createBlank needs some color specification")
 }
 
-createBlankPan <- function(color, pan, dpi, fileName, overwrite=FALSE) {
+createBlankPan <- function(color, pan, dpi, ...) {
   geo <- pan$geometry
   createBlank(
     color,
     w = getDataWidthInPx(geo, dpi),
     h = getDataHeightInPx(geo, dpi),
     dpi,
-    fileName,
-    overwrite)
+    ...)
 }
