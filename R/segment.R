@@ -1,4 +1,5 @@
 idPanelsFromPanelGraph <- function(idGraph, idSegments) {
+  if (nrow(idGraph) == 0) return(list())
   panels <-
     idGraph |>
     arrange(panelId, sideId) |>
@@ -52,6 +53,13 @@ getSegmentOrdering <- function(segments) {
 
 
 idPanels2panelGraph <- function(idPanels, vertices) {
+
+  if (length(idPanels) == 0) return(list(
+    idGraph = tibble(
+      panelId = double(),
+      sideId = double(),
+      segmentId = double()),
+    idSegments = matrix(double(), nrow=0, ncol=2)))
 
   rectGraph <- getPanelGraph(idPanels)
 

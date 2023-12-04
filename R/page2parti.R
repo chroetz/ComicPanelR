@@ -82,7 +82,8 @@ partiFromCoords <- function(name, geometry, coorPanels) {
   rectIdPanels <- idPanelsAndVertices$idPanels
   panelGraph <- idPanels2panelGraph(rectIdPanels, vertices)
   polygonIdPanels <- idPanelsFromPanelGraph(panelGraph$idGraph, panelGraph$idSegments)
-  names(polygonIdPanels) <- paste0("P", seq_along(polygonIdPanels))
+  if (length(polygonIdPanels) > 0)
+    names(polygonIdPanels) <- paste0("P", seq_along(polygonIdPanels))
   parti <- ConfigOpts::makeOpts(
     "Parti",
     name = name,
@@ -163,6 +164,11 @@ getLayoutPanels <- function(layout, box) {
 
 
 coorPanels2Id <- function(panels) {
+  if (length(panels) == 0) {
+    return(list(
+      vertices = matrix(double(), nrow=0, ncol=2),
+      idPanels = list()))
+  }
   eps <- sqrt(.Machine$double.eps)
   coors <- do.call(rbind, panels)
   n <- nrow(coors)

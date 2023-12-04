@@ -31,13 +31,15 @@ getPanelGraph <- function(idPanels) {
   idSegments <- uniqueRows(sortedSides)
   segmentId <- apply(sortedSides, 1, whichIdSegment, idSegments = idSegments)
 
+  if (length(panelIds) == 0) panelIds <- integer(0)
+  if (length(sideIds) == 0) sideIds <- integer(0)
+  if (length(segmentId) == 0) segmentId <- integer(0)
   idGraph <-
     tibble(
       panelId = panelIds,
       sideId = sideIds,
       segmentId = segmentId
     )
-
   return(list(idSegments = idSegments, idGraph = idGraph))
 }
 

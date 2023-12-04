@@ -23,10 +23,15 @@ createPanelsOne <- function(fileInStore, fileInOpts, fileOutPng, fileOutRds) {
 }
 
 makePanels <- function(pan, marginOpts) {
-
   panels <- pan2panels(pan)
   margins <- getMargins(pan, marginOpts)
 
+  if (nrow(panels) == 0) return(tibble(
+    panelId = integer(),
+    sideId = integer(),
+    segmentId = integer(),
+    side = list(),
+    inner = list()))
   panels <-
     panels |>
     left_join(margins, by = c("panelId", "segmentId")) |>
@@ -46,6 +51,7 @@ makePanels <- function(pan, marginOpts) {
 
 pan2panels <- function(pan) {
   n <- length(pan$idPanels)
+  if (n == 0) return(tibble(panelId = integer(), segmentId = integer(), side = list()))
   panels <- lapply(seq_len(n), \(i) {
     vertexIds <- pan$idPanels[[i]]
     idSegments <- cbind(vertexIds, c(vertexIds[-1], vertexIds[1]))
