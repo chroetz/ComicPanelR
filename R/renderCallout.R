@@ -227,6 +227,7 @@ createTikzContent <- function(textOpt, panelPoly, fontOpts, geo, devel) {
     narration = ,
     computer = createTextBox(textOpt, panelPoly, fontOpts, geo, devel),
     speech = ,
+    drone = ,
     telepathy = ,
     whisper = ,
     thought = createCallout(textOpt, panelPoly, fontOpts, geo, devel)
